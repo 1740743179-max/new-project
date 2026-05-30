@@ -1,0 +1,1859 @@
+<!doctype html>
+<html lang="zh-CN" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>解说改编工作台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { primary: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' } }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    .toast { position: fixed; right: 16px; bottom: 16px; z-index: 50; animation: slideIn .3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .saving { color: #d97706; }
+    .saved { color: #16a34a; }
+    textarea { line-height: 1.7; resize: vertical; }
+    input,select,textarea { font: inherit; }
+    .running { opacity: .7; pointer-events: none; }
+    details summary::-webkit-details-marker { display: none; }
+    details summary { list-style: none; }
+    .timeline { border-left: 2px solid #d1d5db; padding-left: 10px; margin-left: 4px; }
+    .dark .timeline { border-left-color: #374151; }
+    .settings-nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+    .settings-nav-item:hover { background: rgba(255,255,255,0.08); }
+    .settings-nav-item.active { background: #4f46e5; transform: translateX(2px); }
+    .settings-panel { display: none; animation: fadeIn .2s ease; }
+    .settings-panel.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .surface-card { border-radius: 16px; border: 1px solid rgb(229 231 235); background: rgba(255,255,255,.96); box-shadow: 0 12px 32px rgba(15,23,42,.08); transition: box-shadow .2s ease, border-color .2s ease; }
+    .surface-card:hover { box-shadow: 0 16px 40px rgba(15,23,42,.12); }
+    .dark .surface-card { border-color: rgb(55 65 81); background: rgba(17,24,39,.96); box-shadow: 0 12px 32px rgba(0,0,0,.36); }
+    .dark .surface-card:hover { box-shadow: 0 16px 40px rgba(0,0,0,.42); }
+    .soft-panel { border-radius: 16px; border: 1px solid rgb(229 231 235); background: rgb(249 250 251); transition: background .2s ease; }
+    .dark .soft-panel { border-color: rgb(55 65 81); background: rgba(31,41,55,.72); }
+    .section-title { font-size: 1rem; font-weight: 650; letter-spacing: -0.01em; }
+    .ghost-button { border: 1px solid rgb(209 213 219); background: transparent; color: rgb(55 65 81); border-radius: 12px; transition: all .2s; }
+    .ghost-button:hover { background: rgb(249 250 251); transform: translateY(-1px); }
+    .dark .ghost-button { border-color: rgb(75 85 99); color: rgb(209 213 219); }
+    .dark .ghost-button:hover { background: rgba(31,41,55,.9); }
+    .danger-panel { border-radius: 16px; border: 1px solid rgb(254 202 202); background: rgb(254 242 242); }
+    .dark .danger-panel { border-color: rgb(127 29 29); background: rgba(127,29,29,.16); }
+    .drawer-shell { transition: transform .25s cubic-bezier(0.4,0,0.2,1), opacity .25s ease; }
+    .output-preview, .output-editor { font-size: 0.9rem; line-height: 1.7; }
+    .output-preview { white-space: pre-wrap; word-break: break-word; }
+    .step-card { transition: all .2s ease; }
+    .step-card:hover { transform: translateX(4px); }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; }
+    .text-balance { text-wrap: balance; }
+    @media (max-width: 1280px) { .main-layout { grid-template-columns: 240px minmax(0,1fr) !important; } .right-col { grid-column: 1 / -1; } }
+    @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr !important; } }
+    ::selection { background: rgba(99,102,241,0.2); }
+    .dark ::selection { background: rgba(99,102,241,0.3); }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgb(209 213 219); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgb(156 163 175); }
+    .dark ::-webkit-scrollbar-thumb { background: rgb(75 85 99); }
+    .dark ::-webkit-scrollbar-thumb:hover { background: rgb(107 114 128); }
+    .step-card { transition: all .2s ease; }
+    .step-card:hover { transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .dark .step-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.32); }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen">
+  <div class="flex min-h-screen">
+    
+    <aside class="w-64 bg-slate-950 text-white flex-shrink-0 border-r border-slate-800">
+      <div class="p-5 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center border border-indigo-400/20">
+            <i class="fa-solid fa-clapperboard"></i>
+          </div>
+          <div>
+            <div class="font-semibold text-base">解说改编工作台</div>
+            <div class="text-xs text-slate-400 mt-1">任务驱动的内容生产后台</div>
+          </div>
+        </div>
+      </div>
+      <nav class="p-4 space-y-5">
+        <div>
+          <div class="px-3 mb-2 text-[11px] uppercase tracking-[0.18em] text-slate-500">工作流</div>
+          <div class="space-y-1">
+            <div class="settings-nav-item active" data-panel="workspace">
+              <i class="fa-solid fa-desktop w-5"></i>
+              <span>工作区</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="px-3 mb-2 text-[11px] uppercase tracking-[0.18em] text-slate-500">配置中心</div>
+          <div class="space-y-1">
+            <div class="settings-nav-item" data-panel="model">
+              <i class="fa-solid fa-robot w-5"></i>
+              <span>大模型配置</span>
+            </div>
+            <div class="settings-nav-item" data-panel="prompt">
+              <i class="fa-regular fa-message w-5"></i>
+              <span>提示词管理</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="px-3 mb-2 text-[11px] uppercase tracking-[0.18em] text-slate-500">记录与系统</div>
+          <div class="space-y-1">
+            <div class="settings-nav-item" data-panel="history">
+              <i class="fa-solid fa-clock-rotate-left w-5"></i>
+              <span>调用记录</span>
+            </div>
+            <div class="settings-nav-item" data-panel="storage">
+              <i class="fa-solid fa-database w-5"></i>
+              <span>存储管理</span>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col">
+      <header class="sticky top-0 z-20 bg-white/84 dark:bg-gray-900/84 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 px-4 py-4">
+        <div class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,.9fr)_auto] xl:items-center">
+          <div class="surface-card p-3">
+            <div class="flex flex-wrap items-center gap-3">
+              <label class="relative block flex-1 min-w-[160px]">
+                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input id="projectSearch" class="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="搜索项目..." />
+              </label>
+              <select id="projectSelect" class="flex-1 min-w-[180px] px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm"></select>
+              <button id="newProject" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors text-sm font-medium"><i class="fa-solid fa-plus mr-1"></i> 新建项目</button>
+              <details class="relative">
+                <summary class="list-none px-4 py-2.5 ghost-button text-sm cursor-pointer"><i class="fa-solid fa-ellipsis mr-1"></i> 更多</summary>
+                <div class="absolute right-0 mt-2 w-48 surface-card p-2 space-y-1 z-30">
+                  <button id="renameProject" class="w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-gray-50 dark:hover:bg-gray-800">重命名</button>
+                  <button id="duplicateProject" class="w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-gray-50 dark:hover:bg-gray-800">复制项目</button>
+                  <button id="exportJson" class="w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-gray-50 dark:hover:bg-gray-800">导出 JSON</button>
+                  <button id="exportMd" class="w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-gray-50 dark:hover:bg-gray-800">导出 Markdown</button>
+                  <button id="deleteProject" class="w-full text-left px-3 py-2 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">删除项目</button>
+                </div>
+              </details>
+            </div>
+          </div>
+          <div class="surface-card p-3">
+            <div class="grid gap-3 md:grid-cols-3">
+              <div>
+                <div class="text-[11px] uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500">保存状态</div>
+                <div id="saveState" class="mt-2 text-sm font-semibold saved">已保存</div>
+              </div>
+              <div>
+                <div class="text-[11px] uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500">当前步骤</div>
+                <div id="topCurrentStep" class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">-</div>
+              </div>
+              <div>
+                <div class="text-[11px] uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500">模型状态</div>
+                <div id="modelStatusPill" class="mt-2 inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">未配置</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 justify-end">
+            <button id="openDashboard" class="px-4 py-2.5 ghost-button text-sm"><i class="fa-solid fa-chart-bar mr-1"></i> 总览</button>
+            <button id="toggleTheme" aria-label="切换主题" class="w-11 h-11 ghost-button flex items-center justify-center text-sm"><i class="fa-solid fa-moon"></i></button>
+            <button id="saveProject" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors text-sm font-medium"><i class="fa-solid fa-floppy-disk mr-1"></i> 保存</button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-3 gap-3 flex-wrap">
+          <div class="min-w-0">
+            <span class="text-xs text-gray-500 dark:text-gray-400" id="projectMeta"></span>
+            <span class="block text-xs text-gray-400 dark:text-gray-500 mt-1" id="recentProjects"></span>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1 p-4 overflow-auto">
+        <div id="panel-workspace" class="settings-panel active">
+          <div class="grid gap-5 main-layout" style="grid-template-columns:276px minmax(0,1fr) 340px">
+            <aside class="surface-card p-4 h-fit">
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <div>
+                  <h2 class="section-title flex items-center gap-2"><i class="fa-solid fa-list-check text-indigo-600 dark:text-indigo-400"></i> 流程导航</h2>
+                  <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">只聚焦当前任务，其余步骤以状态摘要呈现。</div>
+                </div>
+                <span id="workspaceProgressBadge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">0/8</span>
+              </div>
+              <div id="stepList" class="space-y-2"></div>
+            </aside>
+
+            <section class="space-y-5">
+              <section class="surface-card p-5">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span id="focusIndex" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">步骤</span>
+                      <span id="focusState" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">等待上游</span>
+                    </div>
+                    <h2 id="focusTitle" class="text-2xl font-semibold mt-3 text-gray-950 dark:text-white text-balance">步骤</h2>
+                    <p id="focusPurpose" class="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-2xl text-balance"></p>
+                  </div>
+                  <div class="soft-panel px-4 py-3 min-w-[220px]">
+                    <div class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-[0.16em]">下一步建议</div>
+                    <div id="nextStepTitle" class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">完成当前步骤后查看下一步</div>
+                    <div id="nextStepHint" class="mt-1 text-xs text-gray-500 dark:text-gray-400">系统会根据上下游依赖给出建议。</div>
+                  </div>
+                </div>
+                <div class="grid gap-3 md:grid-cols-3 mt-5">
+                  <div class="soft-panel p-4">
+                    <div class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-[0.16em]">任务进度</div>
+                    <div id="focusProgress" class="mt-2 text-lg font-semibold">0 / 8 步完成</div>
+                  </div>
+                  <div class="soft-panel p-4">
+                    <div class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-[0.16em]">依赖提示</div>
+                    <div id="dependencyHint" class="mt-2 text-sm font-medium text-gray-700 dark:text-gray-200">等待上游输入</div>
+                  </div>
+                  <div class="soft-panel p-4">
+                    <div class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-[0.16em]">当前模型</div>
+                    <div id="workspaceModelName" class="mt-2 text-sm font-medium text-gray-700 dark:text-gray-200">-</div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="surface-card p-5 space-y-4">
+                <div>
+                  <h3 class="section-title">当前步骤输入</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">只保留当前任务必要参数，减少同时暴露的配置项。</p>
+                </div>
+                <div class="grid gap-4 md:grid-cols-3">
+                  <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                    当前步骤<select id="activeStep" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm"></select>
+                  </label>
+                  <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                    目标集数<input id="episodeTarget" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm" value="第1集" />
+                  </label>
+                  <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                    字数目标<input id="wordTarget" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm" value="900-1200 字" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="surface-card p-5 space-y-4">
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <h3 class="section-title">步骤 Prompt</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">默认隐藏系统提示词，聚焦任务执行。开发者模式下可编辑。</p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button id="refreshPrompt" class="hidden px-3 py-2 ghost-button text-sm"><i class="fa-solid fa-rotate-right mr-1"></i> 恢复默认</button>
+                  </div>
+                </div>
+                <div id="promptHiddenTip" class="soft-panel px-4 py-3 text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-lock mr-2"></i> 当前为安全视图。解锁开发者模式后可查看和编辑完整提示词。</div>
+                <label id="promptBox" class="hidden text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                  <span class="text-xs uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500">Prompt Editor</span>
+                  <textarea id="focusPrompt" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm font-mono min-h-[220px]"></textarea>
+                </label>
+              </section>
+
+              <section class="surface-card p-5 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 class="section-title">结果预览与编辑</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">先看结果摘要，再决定是否继续编辑、复制或传递到下一步。</p>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button id="copyOutputBtn" class="px-3 py-2 ghost-button text-sm"><i class="fa-solid fa-copy mr-1"></i> 复制</button>
+                    <button id="clearOutputBtn" class="px-3 py-2 ghost-button text-sm"><i class="fa-solid fa-eraser mr-1"></i> 清空</button>
+                    <button id="applyToNextBtn" class="px-3 py-2 ghost-button text-sm"><i class="fa-solid fa-share mr-1"></i> 应用到下一步</button>
+                    <button id="runStepBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors text-sm font-medium"><i class="fa-solid fa-play mr-1"></i> 运行当前步骤</button>
+                  </div>
+                </div>
+                <div class="soft-panel p-5">
+                  <div class="flex items-center justify-between gap-3 mb-3">
+                    <div class="text-xs uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500">结果预览</div>
+                    <div id="outputMeta" class="text-xs font-semibold text-gray-600 dark:text-gray-300">0 字</div>
+                  </div>
+                  <pre id="outputPreview" class="output-preview text-sm text-gray-800 dark:text-gray-100 min-h-[140px] max-h-[400px] overflow-y-auto p-3 rounded-lg bg-white/50 dark:bg-gray-900/30"></pre>
+                </div>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                  <span class="text-xs uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500 font-semibold">编辑区</span>
+                  <textarea id="focusOutput" class="output-editor w-full px-4 py-3.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm min-h-[360px] focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"></textarea>
+                </label>
+              </section>
+            </section>
+
+            <aside class="right-col space-y-4 h-fit">
+              <details class="surface-card p-4" open>
+                <summary class="cursor-pointer flex items-center justify-between gap-3">
+                  <div>
+                    <div class="section-title flex items-center gap-2"><i class="fa-solid fa-file-lines text-indigo-600 dark:text-indigo-400"></i> 素材库</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">原文和项目规则放到辅助信息层。</div>
+                  </div>
+                  <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+                </summary>
+                <div class="mt-4 space-y-3">
+                  <label class="block text-sm text-gray-600 dark:text-gray-300 space-y-1">小说原文<textarea id="novelInput" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm min-h-[160px]"></textarea></label>
+                </div>
+              </details>
+              <details class="surface-card p-4">
+                <summary class="cursor-pointer flex items-center justify-between gap-3">
+                  <div>
+                    <div class="section-title flex items-center gap-2"><i class="fa-solid fa-sliders text-indigo-600 dark:text-indigo-400"></i> 项目设置</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">视角偏好和补充规则统一放在这里。</div>
+                  </div>
+                  <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+                </summary>
+                <div class="mt-4 space-y-3">
+                  <label class="block text-sm text-gray-600 dark:text-gray-300 space-y-1">视角偏好<input id="preferredPerspective" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm" /></label>
+                  <label class="block text-sm text-gray-600 dark:text-gray-300 space-y-1">项目补充规则<textarea id="globalNotes" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm min-h-[120px]"></textarea></label>
+                </div>
+              </details>
+              <details class="surface-card p-4" open>
+                <summary class="cursor-pointer flex items-center justify-between gap-3">
+                  <div>
+                    <div class="section-title flex items-center gap-2"><i class="fa-solid fa-pen-to-square text-indigo-600 dark:text-indigo-400"></i> 成稿区</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">装配发布稿、质检稿和局部优化结果。</div>
+                  </div>
+                  <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+                </summary>
+                <div class="mt-4 space-y-3">
+                  <label class="block text-sm text-gray-600 dark:text-gray-300 space-y-1">发布稿<textarea id="finalDraft" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm min-h-[140px]"></textarea></label>
+                  <label class="block text-sm text-gray-600 dark:text-gray-300 space-y-1">质检修订版<textarea id="qaDraft" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm min-h-[120px]"></textarea></label>
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    <button id="useStep05" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors text-sm font-medium">正文初始化</button>
+                    <button id="applyQa" class="px-3 py-2 ghost-button text-sm">应用质检修订</button>
+                    <button id="applyOpen" class="px-3 py-2 ghost-button text-sm">应用开头优化</button>
+                    <button id="applyEnd" class="px-3 py-2 ghost-button text-sm">应用结尾优化</button>
+                  </div>
+                </div>
+              </details>
+            </aside>
+          </div>
+        </div>
+
+      <div id="panel-model" class="settings-panel p-4">
+        <div class="max-w-7xl mx-auto space-y-4">
+          <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <h2 class="text-xl font-semibold flex items-center gap-2"><i class="fa-solid fa-microchip text-indigo-600 dark:text-indigo-400"></i> 大模型配置</h2>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">保留列表 + 编辑器结构，弱化危险操作，把连接测试放到当前编辑上下文。</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <label class="relative block min-w-[220px]">
+                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input id="modelConfigSearch" class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" placeholder="搜索配置名或模型名" />
+              </label>
+              <button id="newModelConfig" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm"><i class="fa-solid fa-plus mr-1"></i> 新建配置</button>
+              <button id="saveAsModelConfig" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm"><i class="fa-solid fa-copy mr-1"></i> 另存为</button>
+            </div>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-3">
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4">
+              <div class="text-xs text-gray-500 dark:text-gray-400">配置总数</div>
+              <div id="modelConfigCount" class="text-2xl font-semibold mt-2">0</div>
+            </div>
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4">
+              <div class="text-xs text-gray-500 dark:text-gray-400">默认配置</div>
+              <div id="defaultModelConfigName" class="text-lg font-semibold mt-2 truncate">-</div>
+            </div>
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4">
+              <div class="text-xs text-gray-500 dark:text-gray-400">当前工作配置</div>
+              <div id="activeModelConfigName" class="text-lg font-semibold mt-2 truncate">-</div>
+            </div>
+          </div>
+
+          <div class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+            <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold">配置列表</h3>
+                <span id="modelConfigListCount" class="text-xs text-gray-500 dark:text-gray-400">0 项</span>
+              </div>
+              <div id="modelConfigList" class="space-y-3"></div>
+            </section>
+
+            <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-6 space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 class="text-base font-semibold">配置编辑器</h3>
+                  <p id="modelConfigEditorHint" class="text-xs text-gray-500 dark:text-gray-400 mt-1">当前配置的连接测试、即时保存和高级操作都集中在这里。</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button id="testModelConnection" class="px-3 py-2 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-sm"><i class="fa-solid fa-plug mr-1"></i> 测试连接</button>
+                  <details class="relative">
+                    <summary class="list-none px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"><i class="fa-solid fa-ellipsis mr-1"></i> 更多</summary>
+                    <div class="absolute right-0 mt-2 w-40 surface-card p-2 space-y-1 z-20">
+                      <button id="duplicateModelConfigBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">复制</button>
+                      <button id="setDefaultModelConfigBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-700 dark:text-amber-300">设为默认</button>
+                      <button id="deleteModelConfigBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400">删除</button>
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div id="modelTestStatus" class="hidden rounded-lg border px-3 py-2 text-sm"></div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                  配置名称<input id="configName" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" placeholder="例如：OpenAI 生产配置" />
+                </label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                  厂商<select id="provider" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"><option value="openai">openai compatible</option><option value="gemini">gemini</option><option value="doubao">豆包</option><option value="deepseek">深度求索</option><option value="custom">完全自定义</option></select>
+                </label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                  模型名称<input id="model" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" value="gpt-4.1-mini" />
+                </label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                  接口地址<input id="endpoint" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" value="https://api.openai.com/v1/chat/completions" />
+                </label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1 md:col-span-2">
+                  API Key<input id="apiKey" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" type="password" />
+                </label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                  温度<input id="temperature" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" type="number" value="0.8" step="0.1" min="0" max="2" />
+                </label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                  Max Tokens<input id="maxTokens" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" type="number" value="4096" step="128" min="256" />
+                </label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1 md:col-span-2">Custom Headers JSON<textarea id="customHeaders" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm font-mono min-h-[70px]"></textarea></label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1 md:col-span-2">Custom Body Template<textarea id="customBody" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm font-mono min-h-[90px]"></textarea></label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1 md:col-span-2">Custom Response Path<input id="customResponsePath" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" placeholder="choices.0.message.content" /></label>
+              </div>
+              <div class="flex justify-end">
+                <button id="saveActiveModelConfig" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"><i class="fa-solid fa-floppy-disk mr-1"></i> 保存当前配置</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-prompt" class="settings-panel p-4">
+        <div class="max-w-7xl mx-auto space-y-4">
+          <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-6">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div>
+                <h2 class="text-xl font-semibold flex items-center gap-2"><i class="fa-regular fa-message text-indigo-600 dark:text-indigo-400"></i> 提示词管理</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">参考站点的策略改成“搜索 + 模板列表 + 默认恢复 + 右侧编辑器”。</p>
+              </div>
+              <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_auto] items-end w-full xl:w-auto xl:min-w-[620px]">
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1 text-left">
+                  开发者口令
+                  <input id="devPass" type="password" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" placeholder="输入口令后解锁" />
+                </label>
+                <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1 text-left">
+                  当前状态
+                  <input id="devState" readonly class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-sm" value="未解锁" />
+                </label>
+                <button id="quickUnlockDev" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"><i class="fa-solid fa-unlock mr-1"></i> 解锁开发者模式</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="promptManagementArea" class="hidden space-y-4">
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+              开发者模式下可以编辑系统提示词。模板改动会直接影响工作区输出结果，建议先确认当前步骤和目标集数后再保存。
+            </div>
+            <div class="grid gap-4 md:grid-cols-3">
+              <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4">
+                <div class="text-xs text-gray-500 dark:text-gray-400">模板总数</div>
+                <div id="promptCount" class="text-2xl font-semibold mt-2">0</div>
+              </div>
+              <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4">
+                <div class="text-xs text-gray-500 dark:text-gray-400">已修改模板</div>
+                <div id="editedPromptCount" class="text-2xl font-semibold mt-2">0</div>
+              </div>
+              <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4">
+                <div class="text-xs text-gray-500 dark:text-gray-400">当前工作步骤</div>
+                <div id="activePromptName" class="text-lg font-semibold mt-2 truncate">-</div>
+              </div>
+            </div>
+
+            <div class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+              <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4">
+                <div class="flex flex-wrap gap-2 items-center justify-between mb-3">
+                  <h3 class="text-sm font-semibold">模板列表</h3>
+                  <div class="flex flex-wrap gap-2">
+                    <label class="relative block min-w-[220px]">
+                      <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                      <input id="promptSearchInput" class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" placeholder="搜索步骤名或说明" />
+                    </label>
+                    <button id="resetAllPrompts" class="px-3 py-2 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"><i class="fa-solid fa-rotate-left mr-1"></i> 重置全部</button>
+                  </div>
+                </div>
+                <div id="promptTemplateList" class="space-y-3"></div>
+              </section>
+
+              <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-6 space-y-4">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 id="promptTemplateName" class="text-base font-semibold">选择一个提示词</h3>
+                    <p id="promptTemplateDesc" class="text-sm text-gray-500 dark:text-gray-400 mt-1">在左侧选择后编辑。</p>
+                  </div>
+                  <span id="promptTemplateType" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">-</span>
+                </div>
+                <textarea id="promptEditor" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm font-mono min-h-[420px]"></textarea>
+                <div class="flex flex-wrap justify-end gap-2">
+                  <button id="openPromptInWorkspace" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> 切到工作区</button>
+                  <button id="resetPromptTemplate" class="px-3 py-2 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"><i class="fa-solid fa-rotate-left mr-1"></i> 恢复默认</button>
+                  <button id="savePromptTemplate" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"><i class="fa-solid fa-floppy-disk mr-1"></i> 保存模板</button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-history" class="settings-panel p-4">
+        <div class="max-w-7xl mx-auto space-y-4">
+          <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <h2 class="text-xl font-semibold flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-indigo-600 dark:text-indigo-400"></i> 调用记录管理</h2>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">按统计、筛选、记录和右侧详情抽屉分层组织，降低大弹窗干扰。</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="exportHistory" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"><i class="fa-solid fa-file-export mr-1"></i> 导出记录</button>
+              <button id="clearHistory" class="px-4 py-2 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><i class="fa-solid fa-trash mr-1"></i> 清空记录</button>
+            </div>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-4">
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4"><div class="text-xs text-gray-500 dark:text-gray-400">总调用次数</div><div id="historyTotal" class="text-2xl font-semibold mt-2">0</div></div>
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4"><div class="text-xs text-gray-500 dark:text-gray-400">成功率</div><div id="historySuccess" class="text-2xl font-semibold mt-2 text-emerald-600 dark:text-emerald-400">0%</div></div>
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4"><div class="text-xs text-gray-500 dark:text-gray-400">失败次数</div><div id="historyFailure" class="text-2xl font-semibold mt-2 text-red-600 dark:text-red-400">0</div></div>
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4"><div class="text-xs text-gray-500 dark:text-gray-400">平均处理时间</div><div id="historyAvg" class="text-2xl font-semibold mt-2">-</div></div>
+          </div>
+
+          <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-4 space-y-4">
+            <div class="grid gap-4 md:grid-cols-3">
+              <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">模型名称<input id="historyModelFilter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" placeholder="输入模型名称" /></label>
+              <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">调用状态<select id="historyStatusFilter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"><option value="">全部</option><option value="success">成功</option><option value="failure">失败</option></select></label>
+              <label class="text-sm text-gray-600 dark:text-gray-300 space-y-1">搜索<input id="historySearchInput" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm" placeholder="搜索步骤、输入或输出" /></label>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">时间</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">模型</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">步骤</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">状态</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">处理时间</th>
+                    <th class="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+              </table>
+            </div>
+            <div id="historyEmpty" class="hidden text-center py-12 text-sm text-gray-500 dark:text-gray-400">暂无调用记录</div>
+          </section>
+        </div>
+      </div>
+
+      <div id="panel-storage" class="settings-panel p-4">
+        <div class="max-w-7xl mx-auto space-y-4">
+          <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <h2 class="text-xl font-semibold flex items-center gap-2"><i class="fa-solid fa-database text-indigo-600 dark:text-indigo-400"></i> 存储管理</h2>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">参考站点的策略改成“总览占用 + 分类卡片 + 分类清理 + 风险提示”。</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="refreshStorageStats" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"><i class="fa-solid fa-rotate-right mr-1"></i> 刷新</button>
+              <button id="exportAllData" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"><i class="fa-solid fa-download mr-1"></i> 导出数据</button>
+            </div>
+          </div>
+
+          <section class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-6 space-y-4">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">总存储占用</div>
+                <div id="storageUsage" class="text-3xl font-bold mt-2">0 KB</div>
+              </div>
+              <div class="grid gap-4 sm:grid-cols-3 lg:min-w-[460px]">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4"><div class="text-xs text-blue-600 dark:text-blue-400">项目总数</div><div id="projectCount" class="text-lg font-semibold text-blue-800 dark:text-blue-200 mt-1">0</div></div>
+                <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4"><div class="text-xs text-emerald-600 dark:text-emerald-400">最近更新</div><div id="lastUpdate" class="text-sm font-semibold text-emerald-800 dark:text-emerald-200 mt-1">-</div></div>
+                <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"><div class="text-xs text-gray-500 dark:text-gray-400">存储状态</div><div id="storageStatusBadge" class="inline-flex mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-green-500 text-white">正常</div></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-sm mb-2"><span class="text-gray-600 dark:text-gray-300">存储使用率</span><span id="storagePercent" class="font-semibold">0%</span></div>
+              <div class="w-full h-3 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"><div id="storageBar" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width:0%"></div></div>
+            </div>
+          </section>
+
+          <div id="storageWarning" class="hidden rounded-xl border px-4 py-3 text-sm"></div>
+          <div id="storageCategoryGrid" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+          <section class="danger-panel p-5">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h3 class="text-base font-semibold text-red-700 dark:text-red-300">危险操作区</h3>
+                <p class="text-sm text-red-600/80 dark:text-red-300/80 mt-1">建议先导出备份，再执行全量清空。当前操作只影响这个工作台的本地缓存。</p>
+              </div>
+              <button id="clearStorage" class="px-4 py-2 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"><i class="fa-solid fa-trash mr-1"></i> 清空全部</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+  </main>
+
+  <div id="dashboardModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-30 p-4">
+    <section class="w-full max-w-2xl max-h-[85vh] overflow-auto bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold flex items-center gap-2"><i class="fa-solid fa-chart-bar text-indigo-600 dark:text-indigo-400"></i> 项目总览</h2>
+        <button id="closeDashboard" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="dashboardContent" class="space-y-3"></div>
+    </section>
+  </div>
+
+   <div id="historyDetailModal" class="hidden fixed inset-0 z-40">
+    <div class="absolute inset-0 bg-black/40" id="historyDetailBackdrop"></div>
+    <section id="historyDetailDrawer" class="drawer-shell absolute right-0 top-0 h-full w-full max-w-2xl translate-x-full overflow-hidden bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold">调用记录详情</h2>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">输入、输出和错误信息在右侧抽屉查看。</div>
+        </div>
+        <button id="closeHistoryDetail" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="historyDetailContent" class="p-5 overflow-y-auto space-y-5"></div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl px-4 py-3 text-sm"></div>
+
+  <script>
+    const STORE_KEY = "tomato-project-workbench-v3";
+    const STEPS = [
+      ["step01", "Prompt 01｜原文解析与剧情提炼", "把原文拆清楚，形成改编底稿", []],
+      ["step02", "Prompt 02｜视角选择与叙事策略", "锁定主视角和叙事边界", ["step01"]],
+      ["step03", "Prompt 03｜分集切分与单集任务定义", "拆成可连载的单集", ["step01","step02"]],
+      ["step04", "Prompt 04｜单集结构设计", "为目标集先定结构", ["step02","step03"]],
+      ["step05", "Prompt 05｜正文成稿生成", "生成单集正文成稿", ["step04"]],
+      ["step06", "Prompt 06｜开头爆点强化", "只优化开头，增强留存", ["step05"]],
+      ["step07", "Prompt 07｜结尾钩子强化", "只优化结尾，增强追更", ["step05"]],
+      ["step08", "Prompt 08｜质检评分与修订定稿", "评分并输出修订版", ["step05"]]
+    ].map(([id,title,purpose,deps]) => ({ id,title,purpose,deps }));
+
+    const SETTINGS_DEFAULT = {
+      provider: "openai", model: "gpt-4.1-mini", endpoint: "https://api.openai.com/v1/chat/completions", apiKey: "",
+      temperature: "0.8", maxTokens: "4096", customHeaders: "", customBody: "", customResponsePath: "choices.0.message.content",
+      devUnlocked: false, theme: "light"
+    };
+
+    const PROMPT_META = {
+      step01: { type: "分析", tone: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300", description: "拆清原文信息，建立剧情底稿。" },
+      step02: { type: "策略", tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300", description: "选择视角并明确叙事边界。" },
+      step03: { type: "规划", tone: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300", description: "把内容拆成适合连载的单集。" },
+      step04: { type: "结构", tone: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", description: "为目标集建立结构骨架。" },
+      step05: { type: "成稿", tone: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300", description: "生成可直接使用的正文解说稿。" },
+      step06: { type: "优化", tone: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300", description: "强化开头留存，提升爆点。" },
+      step07: { type: "优化", tone: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300", description: "强化结尾钩子，提升追更。" },
+      step08: { type: "质检", tone: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300", description: "给出评分、问题和修订版。" }
+    };
+
+    function createModelConfig(overrides = {}) {
+      const now = new Date().toISOString();
+      return {
+        id: overrides.id || `mc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: overrides.name || "默认配置",
+        provider: overrides.provider || SETTINGS_DEFAULT.provider,
+        model: overrides.model || SETTINGS_DEFAULT.model,
+        endpoint: overrides.endpoint || SETTINGS_DEFAULT.endpoint,
+        apiKey: overrides.apiKey ?? SETTINGS_DEFAULT.apiKey,
+        temperature: String(overrides.temperature ?? SETTINGS_DEFAULT.temperature),
+        maxTokens: String(overrides.maxTokens ?? SETTINGS_DEFAULT.maxTokens),
+        customHeaders: overrides.customHeaders ?? SETTINGS_DEFAULT.customHeaders,
+        customBody: overrides.customBody ?? SETTINGS_DEFAULT.customBody,
+        customResponsePath: overrides.customResponsePath ?? SETTINGS_DEFAULT.customResponsePath,
+        isDefault: !!overrides.isDefault,
+        createdAt: overrides.createdAt || now,
+        updatedAt: overrides.updatedAt || now
+      };
+    }
+
+    function blankProject(name = "未命名项目") {
+      const outputs = {}, prompts = {};
+      STEPS.forEach(s => { outputs[s.id] = ""; prompts[s.id] = ""; });
+      return {
+        id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        activeStep: "step01", novelInput: "", globalNotes: "", preferredPerspective: "",
+        episodeTarget: "第1集", wordTarget: "900-1200 字", outputs, prompts, finalDraft: "", qaDraft: ""
+      };
+    }
+
+    const DEV_PASSWORD_HASH = "0ee5c30ada06e2fe1cc1c680cc89cce733982be6f690b80ae15dfdfcd7395549";
+    const REQUEST_TIMEOUT_MS = 120000;
+    let activeRequestController = null;
+
+    const defaultModelConfig = createModelConfig({ id: "mc_default", name: "默认配置", isDefault: true });
+    const app = {
+      settings: { ...SETTINGS_DEFAULT },
+      projects: [blankProject("默认项目")],
+      modelConfigs: [defaultModelConfig],
+      activeModelConfigId: defaultModelConfig.id,
+      callHistory: [],
+      activePanel: "workspace",
+      activeProjectId: "", running: false, dirty: false, saveTimer: null, projectSearch: "", recentProjectIds: []
+    };
+    app.activeProjectId = app.projects[0].id;
+
+    const $ = (id) => document.getElementById(id);
+    const bindClick = (id, handler) => {
+      const el = $(id);
+      if (el) el.onclick = handler;
+    };
+    const project = () => app.projects.find(p => p.id === app.activeProjectId);
+    const modelConfig = () => app.modelConfigs.find(c => c.id === app.activeModelConfigId) || app.modelConfigs[0];
+
+    function formatBytes(bytes) {
+      if (!bytes) return "0 B";
+      const units = ["B", "KB", "MB", "GB"];
+      const idx = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      const value = bytes / 1024 ** idx;
+      return `${value >= 100 ? Math.round(value) : value.toFixed(value >= 10 ? 1 : 2)} ${units[idx]}`;
+    }
+
+    function debounce(fn, ms = 180) {
+      let timer = null;
+      return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), ms);
+      };
+    }
+
+    function escapeRegex(str) {
+      return String(str || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    async function sha256(message) {
+      const input = new TextEncoder().encode(message);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", input);
+      return Array.from(new Uint8Array(hashBuffer)).map(item => item.toString(16).padStart(2, "0")).join("");
+    }
+
+    function toast(msg) {
+      const el = $("toast");
+      el.textContent = msg;
+      el.classList.remove("hidden");
+      setTimeout(() => el.classList.add("hidden"), 1800);
+    }
+
+    function saveStore() { localStorage.setItem(STORE_KEY, JSON.stringify(app)); }
+    function loadStore() {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.settings) app.settings = { ...SETTINGS_DEFAULT, ...parsed.settings };
+        if (Array.isArray(parsed.projects) && parsed.projects.length) app.projects = parsed.projects;
+        if (Array.isArray(parsed.modelConfigs) && parsed.modelConfigs.length) app.modelConfigs = parsed.modelConfigs.map(cfg => createModelConfig(cfg));
+        if (Array.isArray(parsed.callHistory)) app.callHistory = parsed.callHistory;
+        if (Array.isArray(parsed.recentProjectIds)) app.recentProjectIds = parsed.recentProjectIds;
+        if (typeof parsed.projectSearch === "string") app.projectSearch = parsed.projectSearch;
+        app.activePanel = parsed.activePanel || "workspace";
+        app.activeProjectId = parsed.activeProjectId || app.projects[0].id;
+        app.activeModelConfigId = parsed.activeModelConfigId || app.modelConfigs[0]?.id || defaultModelConfig.id;
+        if (!app.modelConfigs.some(cfg => cfg.id === app.activeModelConfigId)) app.activeModelConfigId = app.modelConfigs[0]?.id || defaultModelConfig.id;
+        if (!app.modelConfigs.length) app.modelConfigs = [createModelConfig({ id: defaultModelConfig.id, name: "默认配置", isDefault: true, ...app.settings })];
+        if (!app.modelConfigs.some(cfg => cfg.isDefault)) app.modelConfigs[0].isDefault = true;
+        const activeCfg = modelConfig();
+        if (activeCfg) applyModelConfigToSettings(activeCfg);
+      } catch {}
+    }
+
+    function applyModelConfigToSettings(cfg) {
+      if (!cfg) return;
+      app.settings.provider = cfg.provider;
+      app.settings.model = cfg.model;
+      app.settings.endpoint = cfg.endpoint;
+      app.settings.apiKey = cfg.apiKey || "";
+      app.settings.temperature = String(cfg.temperature ?? SETTINGS_DEFAULT.temperature);
+      app.settings.maxTokens = String(cfg.maxTokens ?? SETTINGS_DEFAULT.maxTokens);
+      app.settings.customHeaders = cfg.customHeaders || "";
+      app.settings.customBody = cfg.customBody || "";
+      app.settings.customResponsePath = cfg.customResponsePath || SETTINGS_DEFAULT.customResponsePath;
+    }
+
+    function persistSettingsToModelConfig() {
+      const cfg = modelConfig();
+      if (!cfg) return;
+      cfg.name = $("configName") ? ($("configName").value.trim() || cfg.name) : cfg.name;
+      cfg.provider = app.settings.provider;
+      cfg.model = app.settings.model;
+      cfg.endpoint = app.settings.endpoint;
+      cfg.apiKey = app.settings.apiKey;
+      cfg.temperature = String(app.settings.temperature);
+      cfg.maxTokens = String(app.settings.maxTokens);
+      cfg.customHeaders = app.settings.customHeaders;
+      cfg.customBody = app.settings.customBody;
+      cfg.customResponsePath = app.settings.customResponsePath;
+      cfg.updatedAt = new Date().toISOString();
+    }
+
+    function setDefaultModelConfig(configId) {
+      app.modelConfigs = app.modelConfigs.map(cfg => ({ ...cfg, isDefault: cfg.id === configId, updatedAt: cfg.id === configId ? new Date().toISOString() : cfg.updatedAt }));
+      saveStore();
+    }
+
+    function selectModelConfig(configId) {
+      const cfg = app.modelConfigs.find(item => item.id === configId);
+      if (!cfg) return;
+      app.activeModelConfigId = configId;
+      applyModelConfigToSettings(cfg);
+      syncToForm();
+      saveStore();
+      toast(`已切换到配置：${cfg.name}`);
+    }
+
+    function ready(step) { return step.deps.every(id => (project().outputs[id] || "").trim()); }
+    function done(step) { return !!(project().outputs[step.id] || "").trim(); }
+    function stepState(step) { return done(step) ? ["ok","已完成"] : ready(step) ? ["ready","可运行"] : ["blocked","等待上游"]; }
+
+    function extractEpisodeBlock(text, label) {
+      if (!text) return "未找到目标集，请先完成第3步。";
+      const key = (label || "").replace(/\s+/g, "");
+      const patterns = [
+        new RegExp(`(${escapeRegex(key)}[\\s\\S]*?)(?=第\\d+集|第[一二三四五六七八九十百零两]+集|Episode\\s*\\d+|最后补充：|$)`, "i"),
+        new RegExp(`(${escapeRegex(key)}[\\s\\S]*?)(?=$)`, "i")
+      ];
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) return match[1].trim();
+      }
+      return `第3步结果中未匹配到 ${label}，请检查分集格式。`;
+    }
+
+    function defaultPrompt(stepId) {
+      const p = project();
+      const n = p.novelInput || "";
+      const notes = p.globalNotes || "无";
+      if (stepId === "step01") return `你是一名专业的网文解说策划编辑。请基于我提供的小说原文片段，先不要直接写解说稿，而是完成"剧情提炼与改编前分析"。\n\n【任务目标】\n从原文中提炼后续改编解说所需的核心信息，确保不遗漏关键剧情、不混淆人物、不篡改因果逻辑。\n\n【分析原则】\n1. 必须忠于原文核心剧情，不得捏造关键情节。\n2. 允许概括，但不得遗漏主线推进所需的重要事件。\n3. 人物关系、事件起因、冲突升级、关键结果必须明确。\n4. 如果原文中存在信息模糊处，请标注"原文未明确说明"，不要擅自补写。\n5. 输出要为后续"分集、选视角、写正文"服务，语言清晰、结构稳定。\n\n【输出格式】\n请按以下固定模板输出：\n\n一、原文核心信息提炼\n1. 故事背景：\n2. 当前时间/阶段：\n3. 主要人物：\n4. 人物关系：\n5. 本段核心事件：\n6. 事件起因：\n7. 事件经过：\n8. 事件结果：\n9. 当前最强冲突：\n10. 当前最大悬念：\n\n二、剧情推进节点拆解\n请按时间顺序列出 5-10 个关键节点，每个节点用一句话概括：\n1.\n2.\n3.\n……\n\n三、可视化看点提炼\n1. 爆点时刻：\n2. 反差点：\n3. 情绪高点：\n4. 危机点：\n5. 人物高光点：\n6. 最适合做开头的情节点：\n7. 最适合做结尾钩子的情节点：\n\n四、改编风险提示\n1. 容易写错的人物关系：\n2. 容易跳过的关键情节：\n3. 容易混乱的因果链：\n4. 容易写成流水账的部分：\n5. 建议重点展开的部分：\n\n五、改编建议\n1. 更适合的解说类型（第一人称主角/第二人称代入/第三人称/角色视角重组）：\n2. 推荐理由：\n3. 推荐本段主打情绪：\n4. 推荐本段节奏基调：\n5. 推荐后续分集方式：\n\n【项目补充规则】\n${notes}\n\n下面是原文片段：\n${n}`;
+      if (stepId === "step02") return `你是一名擅长网文解说改编的叙事策略编辑。请根据我提供的"剧情提炼结果"，判断这段内容最适合采用哪种解说视角，并给出理由。\n\n【可选视角】\n1. 第一人称主角视角\n2. 第二人称代入式解说\n3. 第三人称剧情解说\n4. 角色视角重组\n\n【判断标准】\n1. 是否便于增强代入感\n2. 是否有利于稳定叙事信息\n3. 是否能突出人物情绪\n4. 是否适合连载追更\n5. 是否更符合原文信息边界\n6. 是否能减少人物混乱和逻辑跳跃\n\n【输出格式】\n一、推荐主视角\n- 视角类型：\n- 推荐理由：\n\n二、备选视角\n- 视角类型：\n- 可用场景：\n- 风险提示：\n\n三、叙事策略建议\n1. 应该贴近谁的感受写：\n2. 哪些信息可以提前说：\n3. 哪些信息必须压后形成悬念：\n4. 本段适合强情绪推进还是冷静讲述：\n5. 应避免的叙事问题：\n\n四、视角执行规则\n请给出后续写作必须遵守的 8 条规则，确保视角稳定、不串戏、不越界。\n\n下面是剧情提炼结果：\n${p.outputs.step01 || ""}`;
+      if (stepId === "step03") return `你是一名连载型剧情解说分集策划。请根据我提供的剧情提炼结果与推荐视角，将内容拆分为适合连载发布的单集。\n\n【任务要求】\n1. 每一集只讲一个核心推进事件，避免信息拥挤。\n2. 每一集都必须具备完整链路：引入情境→铺设冲突→推向高点→留钩/转折。\n3. 分集必须考虑听众追更欲望，不能平均切段，必须在冲突点或悬念点切开。\n4. 不得破坏原文主线逻辑。\n5. 每一集都要明确"这一集的核心看点"。\n\n【输出格式】\n请按模板输出每集内容，并补充首集建议、风险集、重点钩子集。\n\n下面是分析资料：\n${p.outputs.step01 || ""}\n\n${p.outputs.step02 || ""}`;
+      if (stepId === "step04") return `你是一名网文解说结构编辑。请针对我指定的某一集，先不要直接写全文，而是完成"单集结构设计"。\n\n【结构硬要求】\n每一集必须包含：\n1. 引入情境\n2. 铺设冲突\n3. 推向高点\n4. 留钩/转折\n\n【额外要求】\n1. 开头前 1-3 句必须直接抛爆点、异常、危机、反差或悬念，不得平淡开场。\n2. 中段必须条理清晰，一段只推进一件事。\n3. 必须体现明确情绪，不得写成剧情摘要。\n4. 结尾必须留钩，不得收死。\n5. 必须符合平台规范，不得照搬原文。\n\n【输出格式】\n一、本集定位\n二、本集结构设计\n三、写作提醒\n\n下面是本集信息：\n${extractEpisodeBlock(p.outputs.step03 || "", p.episodeTarget || "第1集")}`;
+      if (stepId === "step05") return `你是一名成熟的网文剧情解说文案作者。请根据我提供的"单集结构设计"，写出一篇可直接使用的解说成稿。\n\n【写作目标】\n写成适合"连载型剧情解说 / 有声解说剧"的成品文案，要求开头强、节奏稳、情绪足、像真人讲故事，不像AI复述剧情。\n\n【硬性规则】\n1. 必须严格基于提供内容写作，不得篡改关键剧情、人物关系和因果逻辑。\n2. 不得大段照搬原文，必须用自己的语言重组表达。\n3. 开头必须直接进入冲突/危机/悬念/反差。\n4. 正文必须条理清晰，一段推进一件事。\n5. 要讲故事，必须有情绪、有画面、有推动感。\n6. 人物指代必须清楚。\n7. 情绪基调必须连贯。\n8. 结尾必须留下追更驱动力。\n9. 语言自然口语化。\n10. 不得标签词堆砌。\n11. 不得攻击作者、平台，不得过度解读。\n12. 输出直接成稿。\n\n【字数目标】\n${p.wordTarget || "900-1200 字"}\n\n下面是写作资料：\n${p.outputs.step04 || ""}`;
+      if (stepId === "step06") return `你是一名擅长做"开头留存强化"的网文解说编辑。请只针对我提供的解说稿开头部分进行重写优化，不改动核心剧情方向。\n\n【任务目标】\n把开头改得更抓人、更有爆点。\n\n【输出格式】\n版本A（悬念式）：\n版本B（冲突式）：\n版本C（反差式）：\n\n推荐版本：\n推荐原因：\n\n下面是原稿：\n${p.outputs.step05 || ""}`;
+      if (stepId === "step07") return `你是一名擅长"集末留钩"的解说文案编辑。请只优化我提供稿件的结尾部分，让结尾更能驱动追更。\n\n【输出格式】\n版本A（半揭露式）：\n版本B（反转预告式）：\n版本C（情绪悬停式）：\n\n推荐版本：\n推荐原因：\n\n下面是原稿：\n${p.outputs.step05 || ""}`;
+      return `你是一名网文解说质检审核员。请根据平台解说规范，对我提供的稿件进行严格审查、评分，并给出可执行的修改建议。\n\n【评分标准】\n每项满分10分，总分100分。\n\n【输出格式】\n一、总评\n二、分项评分\n三、问题清单\n四、逐项修改建议\n五、修订版\n\n下面是待审核稿件：\n${p.finalDraft || p.outputs.step05 || ""}`;
+    }
+
+    function buildPrompt(stepId) {
+      const p = project();
+      if (app.settings.devUnlocked && (p.prompts[stepId] || "").trim()) return p.prompts[stepId];
+      return defaultPrompt(stepId);
+    }
+
+    function syncFromForm() {
+      const p = project();
+      p.novelInput = $("novelInput").value;
+      p.globalNotes = $("globalNotes").value;
+      p.preferredPerspective = $("preferredPerspective").value;
+      p.episodeTarget = $("episodeTarget").value;
+      p.wordTarget = $("wordTarget").value;
+      p.activeStep = $("activeStep").value;
+      p.finalDraft = $("finalDraft").value;
+      p.qaDraft = $("qaDraft").value;
+      app.projectSearch = $("projectSearch")?.value || "";
+      p.outputs[p.activeStep] = $("focusOutput").value;
+      if (app.settings.devUnlocked) {
+        const promptValue = app.activePanel === "prompt" && $("promptEditor") ? $("promptEditor").value : $("focusPrompt").value;
+        p.prompts[p.activeStep] = promptValue === defaultPrompt(p.activeStep) ? "" : promptValue;
+      }
+      app.settings.provider = $("provider").value;
+      app.settings.model = $("model").value;
+      app.settings.endpoint = $("endpoint").value;
+      app.settings.apiKey = $("apiKey").value;
+      app.settings.temperature = $("temperature").value;
+      app.settings.maxTokens = $("maxTokens").value;
+      app.settings.customHeaders = $("customHeaders").value;
+      app.settings.customBody = $("customBody").value;
+      app.settings.customResponsePath = $("customResponsePath").value;
+      persistSettingsToModelConfig();
+      p.updatedAt = new Date().toISOString();
+    }
+
+    function syncToForm() {
+      const p = project();
+      $("projectSearch").value = app.projectSearch || "";
+      renderProjectSelect();
+      $("novelInput").value = p.novelInput || "";
+      $("globalNotes").value = p.globalNotes || "";
+      $("preferredPerspective").value = p.preferredPerspective || "";
+      $("episodeTarget").value = p.episodeTarget || "第1集";
+      $("wordTarget").value = p.wordTarget || "900-1200 字";
+      $("activeStep").value = p.activeStep;
+      $("finalDraft").value = p.finalDraft || "";
+      $("qaDraft").value = p.qaDraft || "";
+      $("focusPrompt").value = buildPrompt(p.activeStep);
+      $("focusOutput").value = p.outputs[p.activeStep] || "";
+      $("provider").value = app.settings.provider;
+      $("model").value = app.settings.model;
+      $("endpoint").value = app.settings.endpoint;
+      $("apiKey").value = app.settings.apiKey;
+      $("temperature").value = app.settings.temperature;
+      $("maxTokens").value = app.settings.maxTokens;
+      $("customHeaders").value = app.settings.customHeaders;
+      $("customBody").value = app.settings.customBody;
+      $("customResponsePath").value = app.settings.customResponsePath;
+      if ($("configName")) $("configName").value = modelConfig()?.name || "默认配置";
+      if ($("devState")) $("devState").value = app.settings.devUnlocked ? "已解锁" : "未解锁";
+      if (app.settings.theme === "dark") { document.documentElement.classList.add("dark"); $("toggleTheme").innerHTML = '<i class="fa-solid fa-sun"></i>'; }
+      else { document.documentElement.classList.remove("dark"); $("toggleTheme").innerHTML = '<i class="fa-solid fa-moon"></i>'; }
+      renderProjectMeta();
+      renderSteps();
+      renderDevArea();
+      renderPromptVisibility();
+      renderModelConfigPanel();
+      renderPromptManagementPanel();
+      renderHistoryPanel();
+      updateStorageStats();
+    }
+
+    function renderProjectMeta() {
+      const p = project();
+      $("projectMeta").textContent = `更新时间：${new Date(p.updatedAt).toLocaleString()} ｜ 厂商：${app.settings.provider}`;
+      const recent = app.recentProjectIds.map(id => app.projects.find(pj => pj.id === id)).filter(Boolean).slice(0, 4).map(pj => pj.name).join(" / ");
+      if ($("recentProjects")) $("recentProjects").textContent = recent ? `最近：${recent}` : "";
+      const currentStep = STEPS.find(step => step.id === p.activeStep);
+      if ($("topCurrentStep")) $("topCurrentStep").textContent = currentStep ? currentStep.title : "-";
+      if ($("modelStatusPill")) {
+        const configured = !!app.settings.endpoint.trim() && (app.settings.provider === "custom" || !!app.settings.apiKey.trim());
+        $("modelStatusPill").className = `mt-2 inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${configured ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`;
+        $("modelStatusPill").textContent = configured ? `${app.settings.provider} / ${app.settings.model}` : "待补全模型配置";
+      }
+    }
+
+    function getStepBadge(step) {
+      const [klass, txt] = stepState(step);
+      const tone = klass === "ok"
+        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+        : klass === "ready"
+          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+          : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
+      return { klass, txt, tone };
+    }
+
+    function renderWorkspacePanel() {
+      const p = project();
+      const current = STEPS.find(step => step.id === p.activeStep) || STEPS[0];
+      const next = STEPS[STEPS.findIndex(step => step.id === current.id) + 1] || null;
+      const output = p.outputs[current.id] || "";
+      const trimmed = output.trim();
+      const preview = trimmed ? trimmed.slice(0, 220) + (trimmed.length > 220 ? "..." : "") : "当前步骤还没有结果，运行后这里会展示摘要预览。";
+      if ($("outputPreview")) $("outputPreview").textContent = preview;
+      if ($("outputMeta")) $("outputMeta").textContent = `${trimmed.length} 字`;
+      if ($("workspaceModelName")) $("workspaceModelName").textContent = `${app.settings.provider} / ${app.settings.model}`;
+      if ($("workspaceProgressBadge")) $("workspaceProgressBadge").textContent = `${completedStepCount(p)}/${STEPS.length}`;
+      if ($("focusProgress")) $("focusProgress").textContent = `${completedStepCount(p)} / ${STEPS.length} 步完成`;
+      if ($("focusIndex")) $("focusIndex").textContent = `${String(STEPS.findIndex(step => step.id === current.id) + 1).padStart(2, "0")} / 08`;
+      if ($("dependencyHint")) {
+        $("dependencyHint").textContent = current.deps.length ? `依赖：${current.deps.map(id => STEPS.find(step => step.id === id)?.title).filter(Boolean).join(" / ")}` : "这是起始步骤，可以直接开始。";
+      }
+      if ($("nextStepTitle")) $("nextStepTitle").textContent = next ? `建议下一步：${next.title}` : "当前已经到最后一步";
+      if ($("nextStepHint")) {
+        $("nextStepHint").textContent = next
+          ? (done(current) ? `当前结果已生成，下一步会继续完成：${next.purpose}` : `先完成当前步骤，再进入：${next.purpose}`)
+          : "你可以回看质检结果，或者整理发布稿和质检稿。";
+      }
+    }
+
+    function renderProjectSelect() {
+      const sel = $("projectSelect");
+      sel.innerHTML = "";
+      const list = app.projects.filter(p => p.name.toLowerCase().includes((app.projectSearch || "").toLowerCase()));
+      list.forEach(p => { const op = document.createElement("option"); op.value = p.id; op.textContent = p.name; sel.appendChild(op); });
+      if (!list.find(p => p.id === app.activeProjectId) && list[0]) app.activeProjectId = list[0].id;
+      sel.value = app.activeProjectId;
+    }
+
+    function completedStepCount(p) { return STEPS.filter(s => (p.outputs?.[s.id] || "").trim()).length; }
+    function projectProgressText(p) { return `${completedStepCount(p)}/${STEPS.length} 步`; }
+    function escapeHtml(text) { return String(text || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
+    function slugifyName(name) { return (name || "项目").replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, "-").slice(0, 40) || "项目"; }
+    function downloadText(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+    function cloneProject(source, name) {
+      const cloned = JSON.parse(JSON.stringify(source));
+      cloned.id = `p_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      cloned.name = name;
+      cloned.createdAt = new Date().toISOString();
+      cloned.updatedAt = cloned.createdAt;
+      return cloned;
+    }
+    function renameCurrentProject() {
+      const p = project();
+      const name = (window.prompt("请输入新的项目名称", p.name) || "").trim();
+      if (!name) return;
+      p.name = name;
+      p.updatedAt = new Date().toISOString();
+      renderProjectSelect();
+      syncToForm();
+      forceSave();
+      toast("项目名称已更新");
+    }
+    function duplicateCurrentProject() {
+      syncFromForm();
+      const source = project();
+      const name = (window.prompt("请输入复制后的项目名称", `${source.name}-副本`) || "").trim() || `${source.name}-副本`;
+      const cloned = cloneProject(source, name);
+      app.projects.unshift(cloned);
+      app.activeProjectId = cloned.id;
+      app.recentProjectIds = [cloned.id, ...app.recentProjectIds.filter(id => id !== cloned.id)].slice(0, 8);
+      renderProjectSelect();
+      syncToForm();
+      forceSave();
+      toast("项目已复制");
+    }
+    function exportCurrentProjectJson() {
+      syncFromForm();
+      const p = project();
+      downloadText(`${slugifyName(p.name)}.json`, JSON.stringify(p, null, 2), "application/json;charset=utf-8");
+      toast("项目 JSON 已导出");
+    }
+    function exportCurrentProjectMarkdown() {
+      syncFromForm();
+      const p = project();
+      const content = [
+        `# ${p.name}`,
+        "",
+        `- 导出时间：${new Date().toLocaleString()}`,
+        `- 目标集数：${p.episodeTarget || "未设置"}`,
+        `- 字数目标：${p.wordTarget || "未设置"}`,
+        "",
+        "## 发布稿",
+        "",
+        p.finalDraft || p.outputs.step05 || "",
+        "",
+        "## 质检修订版",
+        "",
+        p.qaDraft || ""
+      ].join("\n");
+      downloadText(`${slugifyName(p.name)}.md`, content, "text/markdown;charset=utf-8");
+      toast("Markdown 已导出");
+    }
+    function renderDashboard() {
+      const box = $("dashboardContent");
+      if (!box) return;
+      const cards = [...app.projects].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).map(p => {
+        const count = completedStepCount(p);
+        const percent = Math.round((count / STEPS.length) * 100);
+        const active = p.id === app.activeProjectId;
+        const stepTitle = STEPS.find(s => s.id === p.activeStep)?.title || "未设置";
+        return `
+          <button data-project-id="${p.id}" class="dashboard-project w-full text-left p-4 rounded-xl border ${active ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"}">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">${escapeHtml(p.name)}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">最近更新：${new Date(p.updatedAt).toLocaleString()}</div>
+              </div>
+              <div class="text-xs font-medium text-indigo-600 dark:text-indigo-300">${projectProgressText(p)}</div>
+            </div>
+            <div class="mt-3 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+              <div class="h-full bg-indigo-600 dark:bg-indigo-400" style="width:${percent}%"></div>
+            </div>
+            <div class="mt-3 grid grid-cols-3 gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <span>当前步骤：${escapeHtml(stepTitle)}</span>
+              <span>发布稿：${(p.finalDraft || "").trim() ? "已装配" : "未装配"}</span>
+              <span>质检稿：${(p.qaDraft || "").trim() ? "已生成" : "未生成"}</span>
+            </div>
+          </button>`;
+      }).join("");
+      box.innerHTML = cards || '<div class="text-sm text-gray-500 dark:text-gray-400">暂无项目</div>';
+      box.querySelectorAll(".dashboard-project").forEach(el => {
+        el.onclick = () => {
+          syncFromForm();
+          app.activeProjectId = el.dataset.projectId;
+          app.recentProjectIds = [app.activeProjectId, ...app.recentProjectIds.filter(id => id !== app.activeProjectId)].slice(0, 8);
+          renderProjectSelect();
+          syncToForm();
+          forceSave();
+          $("dashboardModal").classList.add("hidden");
+        };
+      });
+    }
+    function validateStructuredOutput(stepId, text) {
+      const value = (text || "").trim();
+      if (!value) return "";
+      if (stepId === "step04" && (!/一、本集定位/.test(value) || !/二、本集结构设计/.test(value) || !/三、写作提醒/.test(value))) return "step04 输出缺少标准结构标题（一、本集定位 / 二、本集结构设计 / 三、写作提醒）";
+      if (stepId === "step05" && value.length < 300) return "step05 成稿内容过短（<300字），建议检查上游步骤输出";
+      if ((stepId === "step06" || stepId === "step07") && value.length < 120) return "step05 成稿内容过短，建议先补全正文再做局部优化";
+      if (stepId === "step08") {
+        if ((project().outputs.step06 || "").trim() && !/推荐版本/.test(project().outputs.step06 || "")) return "step06 缺少推荐版本标记";
+        if ((project().outputs.step07 || "").trim() && !/推荐版本/.test(project().outputs.step07 || "")) return "step07 缺少推荐版本标记";
+      }
+      return "";
+    }
+
+    function setSaveState(text, cls) { const el = $("saveState"); el.textContent = text; el.className = `text-xs font-medium ${cls}`; }
+    function markDirty() { app.dirty = true; setSaveState("未保存", "saving"); }
+    function autoSave() { if (!app.dirty) return; setSaveState("正在保存...", "saving"); clearTimeout(app.saveTimer); app.saveTimer = setTimeout(() => { saveStore(); app.dirty = false; setSaveState("已保存", "saved"); }, 3000); }
+    function forceSave() { clearTimeout(app.saveTimer); saveStore(); app.dirty = false; setSaveState("已保存", "saved"); }
+    function setRunning(on) {
+      app.running = on;
+      ["runStepBtn", "copyOutputBtn", "clearOutputBtn", "applyToNextBtn"].forEach(id => {
+        const b = $(id);
+        if (b) {
+          b.disabled = on;
+          b.classList.toggle("running", on);
+        }
+      });
+      if (on) setSaveState("运行中...", "saving");
+      else setSaveState("已保存", "saved");
+    }
+
+    function beginRequest() {
+      if (activeRequestController) activeRequestController.abort();
+      const controller = new AbortController();
+      activeRequestController = controller;
+      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      return {
+        signal: controller.signal,
+        finish() {
+          clearTimeout(timer);
+          if (activeRequestController === controller) activeRequestController = null;
+        }
+      };
+    }
+
+    async function readResponseData(response) {
+      const text = await response.text();
+      if (!text) return {};
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { message: text.slice(0, 500) };
+      }
+    }
+
+    function buildApiError(response, data) {
+      const detail = data?.error?.message || data?.error?.code || data?.message || data?.detail || JSON.stringify(data || {}).slice(0, 200) || "未返回错误详情";
+      return new Error(`API 调用失败 (${response.status}): ${detail}`);
+    }
+
+    async function callModel(prompt) {
+      const s = app.settings;
+      if (!s.endpoint.trim()) throw new Error("请填写接口地址");
+      if (!s.apiKey.trim() && s.provider !== "custom") throw new Error("请填写 API Key");
+      const request = beginRequest();
+      try {
+        if (["openai","doubao","deepseek"].includes(s.provider)) {
+          const response = await fetch(s.endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${s.apiKey}` },
+            body: JSON.stringify({ model: s.model, messages: [{ role: "user", content: prompt }], temperature: Number(s.temperature), max_tokens: Number(s.maxTokens) }),
+            signal: request.signal
+          });
+          const data = await readResponseData(response);
+          if (!response.ok) throw buildApiError(response, data);
+          return data.choices?.[0]?.message?.content || "";
+        }
+        if (s.provider === "gemini") {
+          const url = `${s.endpoint}${s.endpoint.includes("?") ? "&" : "?"}key=${encodeURIComponent(s.apiKey)}`;
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: Number(s.temperature), maxOutputTokens: Number(s.maxTokens) } }),
+            signal: request.signal
+          });
+          const data = await readResponseData(response);
+          if (!response.ok) throw buildApiError(response, data);
+          return data.candidates?.[0]?.content?.parts?.map(item => item.text).join("\n") || "";
+        }
+
+        let headers;
+        let body;
+        try {
+          headers = s.customHeaders.trim() ? JSON.parse(template(s.customHeaders, prompt)) : { "Content-Type": "application/json" };
+        } catch (error) {
+          throw new Error(`Custom Headers JSON 解析失败: ${error.message}`);
+        }
+        try {
+          const bodyTemplate = s.customBody.trim() || '{"model":"{{model}}","messages":[{"role":"user","content":{{prompt}}}],"temperature":{{temperature}},"max_tokens":{{maxTokens}}}';
+          body = JSON.parse(template(bodyTemplate, prompt));
+        } catch (error) {
+          throw new Error(`Custom Body JSON 解析失败: ${error.message}`);
+        }
+
+        const response = await fetch(s.endpoint, { method: "POST", headers, body: JSON.stringify(body), signal: request.signal });
+        const data = await readResponseData(response);
+        if (!response.ok) throw buildApiError(response, data);
+        return pathGet(data, s.customResponsePath.trim() || "choices.0.message.content") || JSON.stringify(data, null, 2);
+      } catch (error) {
+        if (error?.name === "AbortError") throw new Error(`请求已取消或超时（>${REQUEST_TIMEOUT_MS / 1000} 秒）`);
+        throw error;
+      } finally {
+        request.finish();
+      }
+    }
+    function template(str, prompt) {
+      const s = app.settings;
+      const promptToken = `__MCAI_PROMPT_${Date.now()}_${Math.random().toString(36).slice(2)}__`;
+      const withPromptToken = String(str || "")
+        .replace(/"\{\{prompt\}\}"/g, promptToken)
+        .replace(/\{\{prompt\}\}/g, promptToken);
+      const withSettings = withPromptToken.replace(/\{\{(apiKey|model|temperature|maxTokens)\}\}/g, (_, key) => {
+        if (key === "temperature") return String(s.temperature);
+        if (key === "maxTokens") return String(s.maxTokens);
+        return String(s[key] || "");
+      });
+      return withSettings.replaceAll(promptToken, JSON.stringify(prompt));
+    }
+    function pathGet(obj, p) { return p.split(".").reduce((a, k) => (a == null ? undefined : a[k]), obj); }
+
+    async function runStep(stepId) {
+      syncFromForm();
+      const p = project();
+      const step = STEPS.find(s => s.id === stepId);
+      if (!ready(step)) return toast("请先完成上游步骤");
+
+      const guardErrors = [];
+      if (stepId === "step05" && !(p.outputs.step04 || "").trim()) guardErrors.push("step04 单集结构设计为空，请先运行第4步");
+      if (stepId === "step06") {
+        if (!(p.outputs.step05 || "").trim()) guardErrors.push("step05 正文成稿为空，请先运行第5步");
+      }
+      if (stepId === "step07") {
+        if (!(p.outputs.step05 || "").trim()) guardErrors.push("step05 正文成稿为空，请先运行第5步");
+      }
+      if (stepId === "step08") {
+        if (!(p.finalDraft || p.outputs.step05 || "").trim()) guardErrors.push("发布稿和step05成稿均为空，请先完成第5步并初始化发布稿");
+        const structureError = validateStructuredOutput(stepId, p.finalDraft || p.outputs.step05 || "");
+        if (structureError) guardErrors.push(structureError);
+      }
+      if (stepId !== "step08") {
+        const upstreamId = stepId === "step05" ? "step04" : "step05";
+        const structureStepId = stepId === "step05" ? "step04" : stepId;
+        const structureError = validateStructuredOutput(structureStepId, p.outputs[upstreamId] || "");
+        if (structureError) guardErrors.push(structureError);
+      }
+      if (guardErrors.length) { guardErrors.forEach(e => toast(e)); return; }
+      setRunning(true);
+      const prompt = buildPrompt(stepId);
+      const startedAt = Date.now();
+      if (app.settings.devUnlocked) p.prompts[stepId] = prompt;
+      try {
+        const output = (await callModel(prompt)).trim();
+        const duration = Date.now() - startedAt;
+        p.outputs[stepId] = output;
+        if (stepId === "step05" && !p.finalDraft.trim()) p.finalDraft = output;
+        if (stepId === "step08") {
+          const qa = (output.match(/五、修订版[\s\S]*?[：:]([\s\S]*)$/) || [])[1] || "";
+          if (qa.trim()) p.qaDraft = qa.trim();
+        }
+        addCallHistory({ modelConfigId: modelConfig()?.id, modelName: modelConfig()?.name || app.settings.model, stepId: step.id, stepTitle: step.title, status: "success", processingTime: duration, inputContent: prompt, outputContent: output, errorMessage: "" });
+        syncToForm(); saveStore(); toast("步骤运行完成");
+      } catch (e) {
+        addCallHistory({ modelConfigId: modelConfig()?.id, modelName: modelConfig()?.name || app.settings.model, stepId: step.id, stepTitle: step.title, status: "failure", processingTime: Date.now() - startedAt, inputContent: prompt, outputContent: "", errorMessage: e.message || "调用失败" });
+        toast(e.message || "调用失败");
+      }
+      finally { setRunning(false); }
+    }
+
+    async function runToCurrent() {
+      const p = project();
+      const idx = STEPS.findIndex(s => s.id === p.activeStep);
+      for (let i = 0; i <= idx; i++) { const s = STEPS[i]; if (p.outputs[s.id]?.trim()) continue; if (!ready(s)) break; await runStep(s.id); }
+    }
+
+    function applyProviderPreset() {
+      const s = app.settings;
+      if (s.provider === "openai") { s.endpoint = "https://api.openai.com/v1/chat/completions"; s.customResponsePath = "choices.0.message.content"; }
+      if (s.provider === "gemini") { s.endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent"; s.customResponsePath = "candidates.0.content.parts.0.text"; }
+      if (s.provider === "doubao") { s.endpoint = "https://ark.cn-beijing.volces.com/api/v3/chat/completions"; s.customResponsePath = "choices.0.message.content"; }
+      if (s.provider === "deepseek") { s.endpoint = "https://api.deepseek.com/chat/completions"; s.customResponsePath = "choices.0.message.content"; }
+      if (s.provider === "custom") { s.endpoint = ""; s.customHeaders = '{"Authorization":"Bearer {{apiKey}}","Content-Type":"application/json"}'; s.customBody = '{"model":"{{model}}","messages":[{"role":"user","content":{{prompt}}}],"temperature":{{temperature}},"max_tokens":{{maxTokens}}}'; s.customResponsePath = "data.output_text"; }
+    }
+
+    function renderSteps() {
+      const p = project();
+      const box = $("stepList");
+      box.innerHTML = "";
+      STEPS.forEach((s, i) => {
+        const { klass, txt, tone } = getStepBadge(s);
+        const el = document.createElement("button");
+        el.className = `step-card w-full text-left p-4 rounded-2xl border transition-all cursor-pointer ${p.activeStep === s.id ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 shadow-md" : ready(s) ? "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-sm" : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 opacity-90"}`;
+        el.innerHTML = `<div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="flex items-center gap-2"><span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${tone}">${i + 1}</span><span class="text-sm font-semibold leading-5 text-gray-900 dark:text-gray-100">${s.title}</span></div><div class="text-xs text-gray-500 dark:text-gray-400 mt-2.5 pl-8">${s.purpose}</div></div><span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${tone}">${txt}</span></div>`;
+        el.onclick = () => { syncFromForm(); p.activeStep = s.id; if (!p.prompts[s.id]) p.prompts[s.id] = defaultPrompt(s.id); syncToForm(); saveStore(); };
+        box.appendChild(el);
+      });
+      const fs = STEPS.find(s => s.id === p.activeStep);
+      const { txt, tone } = getStepBadge(fs);
+      $("focusTitle").textContent = fs.title;
+      $("focusPurpose").textContent = fs.purpose;
+      $("focusState").className = `inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${tone}`;
+      $("focusState").textContent = txt;
+      renderWorkspacePanel();
+    }
+
+    function renderPromptVisibility() {
+      const on = app.settings.devUnlocked;
+      $("promptBox").classList.toggle("hidden", !on);
+      $("refreshPrompt").classList.toggle("hidden", !on);
+      $("promptHiddenTip").classList.toggle("hidden", on);
+    }
+
+    function renderDevArea() {
+      renderDevAreaPanel();
+    }
+
+    async function unlockDeveloperMode() {
+      const passInput = $("devPass");
+      const pass = (passInput ? passInput.value : window.prompt("请输入开发者口令", "") || "").trim();
+      const passHash = await sha256(pass);
+      if (passHash !== DEV_PASSWORD_HASH) return toast("口令不正确");
+      app.settings.devUnlocked = true;
+      const p = project();
+      STEPS.forEach(s => { if (!p.prompts[s.id]) p.prompts[s.id] = defaultPrompt(s.id); });
+      syncToForm();
+      forceSave();
+      toast("开发者模式已解锁");
+    }
+
+    function getPromptTemplateValue(stepId) {
+      const p = project();
+      return p.prompts[stepId] || defaultPrompt(stepId);
+    }
+
+    function isPromptCustomized(stepId) {
+      const p = project();
+      return !!(p.prompts[stepId] || "").trim() && p.prompts[stepId] !== defaultPrompt(stepId);
+    }
+
+    function renderModelConfigPanel() {
+      if (!$("modelConfigList")) return;
+      const keyword = ($("modelConfigSearch")?.value || "").trim().toLowerCase();
+      const list = app.modelConfigs.filter(cfg => [cfg.name, cfg.model, cfg.provider, cfg.endpoint].join(" ").toLowerCase().includes(keyword));
+      $("modelConfigCount").textContent = app.modelConfigs.length;
+      $("modelConfigListCount").textContent = `${list.length} 项`;
+      $("defaultModelConfigName").textContent = app.modelConfigs.find(cfg => cfg.isDefault)?.name || "-";
+      $("activeModelConfigName").textContent = modelConfig()?.name || "-";
+      const box = $("modelConfigList");
+      box.innerHTML = "";
+      if (!list.length) {
+        box.innerHTML = '<div class="text-sm text-gray-500 dark:text-gray-400 text-center py-10">没有匹配的大模型配置</div>';
+        return;
+      }
+      list.forEach(cfg => {
+        const card = document.createElement("div");
+        const active = cfg.id === app.activeModelConfigId;
+        card.className = `rounded-xl border p-4 transition-all ${active ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20" : "border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40"}`;
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-semibold truncate">${escapeHtml(cfg.name)}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">${escapeHtml(cfg.provider)} / ${escapeHtml(cfg.model)}</div>
+            </div>
+            <div class="flex flex-wrap gap-1 justify-end">
+              ${cfg.isDefault ? '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">默认</span>' : ""}
+              ${active ? '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">当前</span>' : ""}
+            </div>
+          </div>
+          <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 break-all line-clamp-2">${escapeHtml(cfg.endpoint)}</div>
+          <div class="mt-3 flex items-center justify-between gap-2">
+            <span class="text-xs text-gray-400 dark:text-gray-500">更新于 ${new Date(cfg.updatedAt).toLocaleString()}</span>
+            <button class="px-3 py-1.5 rounded-lg text-xs font-medium ${active ? "bg-indigo-600 text-white" : "border border-gray-300 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-800"}" data-select="${cfg.id}">${active ? "使用中" : "切换"}</button>
+          </div>`;
+        card.querySelector("[data-select]").onclick = () => selectModelConfig(cfg.id);
+        box.appendChild(card);
+      });
+    }
+
+    function renderPromptManagementPanel() {
+      if (!$("promptManagementArea")) return;
+      const p = project();
+      $("promptManagementArea").classList.toggle("hidden", !app.settings.devUnlocked);
+      if (!app.settings.devUnlocked) return;
+      const search = ($("promptSearchInput")?.value || "").trim().toLowerCase();
+      const steps = STEPS.filter(step => {
+        const meta = PROMPT_META[step.id] || { type: "模板", description: step.purpose };
+        return [step.title, step.purpose, meta.type, meta.description].join(" ").toLowerCase().includes(search);
+      });
+      $("promptCount").textContent = STEPS.length;
+      $("editedPromptCount").textContent = STEPS.filter(step => isPromptCustomized(step.id)).length;
+      $("activePromptName").textContent = STEPS.find(step => step.id === p.activeStep)?.title || "-";
+      const list = $("promptTemplateList");
+      list.innerHTML = "";
+      if (!steps.length) {
+        list.innerHTML = '<div class="text-sm text-gray-500 dark:text-gray-400 text-center py-10">没有匹配的提示词模板</div>';
+      } else {
+        steps.forEach(step => {
+          const meta = PROMPT_META[step.id] || { type: "模板", tone: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300", description: step.purpose };
+          const active = p.activeStep === step.id;
+          const customized = isPromptCustomized(step.id);
+          const btn = document.createElement("button");
+          btn.className = `w-full text-left rounded-xl border p-4 transition-all ${active ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20" : "border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 hover:shadow-sm"}`;
+          btn.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-sm font-semibold">${escapeHtml(step.title)}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">${escapeHtml(meta.description)}</div>
+              </div>
+              <div class="flex flex-wrap gap-1 justify-end">
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${meta.tone}">${meta.type}</span>
+                ${customized ? '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">已改</span>' : '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">默认</span>'}
+              </div>
+            </div>`;
+          btn.onclick = () => {
+            syncFromForm();
+            p.activeStep = step.id;
+            syncToForm();
+            saveStore();
+          };
+          list.appendChild(btn);
+        });
+      }
+      const currentStep = STEPS.find(step => step.id === p.activeStep) || STEPS[0];
+      const meta = PROMPT_META[currentStep.id] || { type: "模板", tone: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300", description: currentStep.purpose };
+      $("promptTemplateName").textContent = currentStep.title;
+      $("promptTemplateDesc").textContent = meta.description;
+      $("promptTemplateType").className = `px-2.5 py-1 rounded-full text-xs font-semibold ${meta.tone}`;
+      $("promptTemplateType").textContent = meta.type;
+      $("promptEditor").value = getPromptTemplateValue(currentStep.id);
+    }
+
+    function addCallHistory(entry) {
+      app.callHistory.unshift({ id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, timestamp: new Date().toISOString(), ...entry });
+      app.callHistory = app.callHistory.slice(0, 200);
+      saveStore();
+      renderHistoryPanel();
+      updateStorageStats();
+    }
+
+    function getFilteredHistory() {
+      const keyword = ($("historySearchInput")?.value || "").trim().toLowerCase();
+      const modelName = ($("historyModelFilter")?.value || "").trim().toLowerCase();
+      const status = $("historyStatusFilter")?.value || "";
+      return app.callHistory.filter(item => {
+        if (modelName && !(item.modelName || "").toLowerCase().includes(modelName)) return false;
+        if (status && item.status !== status) return false;
+        if (!keyword) return true;
+        return [item.stepTitle, item.modelName, item.inputContent, item.outputContent, item.errorMessage].join(" ").toLowerCase().includes(keyword);
+      });
+    }
+
+    function renderHistoryPanel() {
+      if (!$("historyTableBody")) return;
+      const all = app.callHistory;
+      const filtered = getFilteredHistory();
+      const successCount = all.filter(item => item.status === "success").length;
+      const failureCount = all.filter(item => item.status === "failure").length;
+      const avg = all.length ? Math.round(all.reduce((sum, item) => sum + (item.processingTime || 0), 0) / all.length) : 0;
+      const successRate = all.length ? Math.round(successCount / all.length * 100) : 0;
+      $("historyTotal").textContent = all.length;
+      $("historySuccess").textContent = `${successRate}%`;
+      $("historyFailure").textContent = failureCount;
+      $("historyAvg").textContent = all.length ? `${avg}ms` : "-";
+      const body = $("historyTableBody");
+      body.innerHTML = "";
+      $("historyEmpty").classList.toggle("hidden", filtered.length !== 0);
+      filtered.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/60";
+        tr.innerHTML = `
+          <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-200">${new Date(item.timestamp).toLocaleString()}</td>
+          <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-200">${escapeHtml(item.modelName || "未知模型")}</td>
+          <td class="px-4 py-3 text-gray-700 dark:text-gray-200">${escapeHtml(item.stepTitle || "未命名步骤")}</td>
+          <td class="px-4 py-3 whitespace-nowrap">${item.status === "success" ? '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">成功</span>' : '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">失败</span>'}</td>
+          <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-200">${item.processingTime != null ? `${item.processingTime}ms` : "-"}</td>
+          <td class="px-4 py-3 text-right"><button class="text-indigo-600 dark:text-indigo-400 hover:underline text-sm" data-detail="${item.id}">查看详情</button></td>`;
+        tr.querySelector("[data-detail]").onclick = () => openHistoryDetail(item.id);
+        body.appendChild(tr);
+      });
+    }
+
+    function openHistoryDetail(id) {
+      const item = app.callHistory.find(entry => entry.id === id);
+      if (!item || !$("historyDetailModal")) return;
+      $("historyDetailContent").innerHTML = `
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="rounded-xl bg-gray-50 dark:bg-gray-800 p-4"><div class="text-xs text-gray-500 dark:text-gray-400">调用时间</div><div class="mt-1 text-sm font-medium">${new Date(item.timestamp).toLocaleString()}</div></div>
+          <div class="rounded-xl bg-gray-50 dark:bg-gray-800 p-4"><div class="text-xs text-gray-500 dark:text-gray-400">处理时间</div><div class="mt-1 text-sm font-medium">${item.processingTime != null ? `${item.processingTime}ms` : "-"}</div></div>
+          <div class="rounded-xl bg-gray-50 dark:bg-gray-800 p-4"><div class="text-xs text-gray-500 dark:text-gray-400">模型</div><div class="mt-1 text-sm font-medium">${escapeHtml(item.modelName || "未知模型")}</div></div>
+          <div class="rounded-xl bg-gray-50 dark:bg-gray-800 p-4"><div class="text-xs text-gray-500 dark:text-gray-400">状态</div><div class="mt-1 text-sm font-medium">${item.status === "success" ? "成功" : "失败"}</div></div>
+        </div>
+        <div class="space-y-3">
+          <div><div class="text-sm font-semibold mb-2">步骤</div><div class="rounded-xl bg-gray-50 dark:bg-gray-800 p-4 text-sm">${escapeHtml(item.stepTitle || "未命名步骤")}</div></div>
+          <div><div class="flex items-center justify-between gap-2 mb-2"><div class="text-sm font-semibold">输入内容</div><button class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline" data-copy="input">复制输入</button></div><pre class="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 text-sm whitespace-pre-wrap break-words overflow-x-auto max-h-[240px]">${escapeHtml(item.inputContent || "")}</pre></div>
+          <div><div class="flex items-center justify-between gap-2 mb-2"><div class="text-sm font-semibold">输出内容</div><button class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline" data-copy="output">复制输出</button></div><pre class="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-4 text-sm whitespace-pre-wrap break-words overflow-x-auto max-h-[260px]">${escapeHtml(item.outputContent || "")}</pre></div>
+          ${item.errorMessage ? `<div><div class="text-sm font-semibold mb-2">错误信息</div><pre class="rounded-xl bg-red-50 dark:bg-red-900/20 p-4 text-sm whitespace-pre-wrap break-words overflow-x-auto">${escapeHtml(item.errorMessage)}</pre></div>` : ""}
+        </div>`;
+      $("historyDetailModal").classList.remove("hidden");
+      requestAnimationFrame(() => $("historyDetailDrawer").classList.remove("translate-x-full"));
+      $("historyDetailContent").querySelectorAll("[data-copy]").forEach(btn => {
+        btn.onclick = () => {
+          const value = btn.dataset.copy === "input" ? item.inputContent || "" : item.outputContent || "";
+          navigator.clipboard.writeText(value).then(() => toast(btn.dataset.copy === "input" ? "输入内容已复制" : "输出内容已复制"));
+        };
+      });
+    }
+
+    function closeHistoryDetail() {
+      if (!$("historyDetailModal")) return;
+      $("historyDetailDrawer").classList.add("translate-x-full");
+      setTimeout(() => $("historyDetailModal").classList.add("hidden"), 180);
+    }
+
+    function getStorageCategories() {
+      const categories = [
+        { id: "projects", name: "项目数据", description: "项目内容、步骤输出和发布稿。", icon: "fa-folder-open", color: "from-blue-500 to-indigo-500", size: new Blob([JSON.stringify(app.projects)]).size, count: app.projects.length },
+        { id: "configs", name: "模型配置", description: "大模型配置、默认配置与当前工作配置。", icon: "fa-microchip", color: "from-violet-500 to-fuchsia-500", size: new Blob([JSON.stringify(app.modelConfigs)]).size, count: app.modelConfigs.length },
+        { id: "history", name: "调用记录", description: "模型调用结果、失败原因与调试输入输出。", icon: "fa-clock-rotate-left", color: "from-emerald-500 to-teal-500", size: new Blob([JSON.stringify(app.callHistory)]).size, count: app.callHistory.length },
+        { id: "prefs", name: "界面偏好", description: "主题、最近项目、当前激活面板和轻量设置。", icon: "fa-sliders", color: "from-amber-500 to-orange-500", size: new Blob([JSON.stringify({ settings: app.settings, activeProjectId: app.activeProjectId, activeModelConfigId: app.activeModelConfigId, recentProjectIds: app.recentProjectIds })]).size, count: 4 }
+      ];
+      const total = categories.reduce((sum, item) => sum + item.size, 0);
+      return { categories, total, percent: Math.min(total / (5 * 1024 * 1024) * 100, 100) };
+    }
+
+    function clearStorageCategory(categoryId) {
+      if (categoryId === "projects") {
+        app.projects = [blankProject("默认项目")];
+        app.activeProjectId = app.projects[0].id;
+      }
+      if (categoryId === "configs") {
+        app.modelConfigs = [createModelConfig({ id: "mc_default", name: "默认配置", isDefault: true })];
+        app.activeModelConfigId = app.modelConfigs[0].id;
+        applyModelConfigToSettings(app.modelConfigs[0]);
+      }
+      if (categoryId === "history") app.callHistory = [];
+      if (categoryId === "prefs") {
+        app.settings = { ...SETTINGS_DEFAULT, devUnlocked: app.settings.devUnlocked };
+        app.recentProjectIds = [app.activeProjectId];
+        applyModelConfigToSettings(modelConfig());
+      }
+      saveStore();
+      syncToForm();
+      toast("分类数据已清空");
+    }
+
+    function updateStorageStats() {
+      if (!$("storageCategoryGrid")) return;
+      const { categories, total, percent } = getStorageCategories();
+      $("projectCount").textContent = app.projects.length;
+      const latest = [...app.projects].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+      $("lastUpdate").textContent = latest ? new Date(latest.updatedAt).toLocaleString() : "-";
+      $("storageUsage").textContent = formatBytes(total);
+      $("storagePercent").textContent = `${percent.toFixed(1)}%`;
+      $("storageBar").style.width = `${percent}%`;
+      $("storageBar").className = `h-full rounded-full transition-all duration-300 ${percent >= 90 ? "bg-red-500" : percent >= 75 ? "bg-amber-500" : "bg-emerald-500"}`;
+      $("storageStatusBadge").textContent = percent >= 90 ? "严重" : percent >= 75 ? "警告" : percent >= 50 ? "注意" : "正常";
+      $("storageStatusBadge").className = `inline-flex mt-2 px-3 py-1 rounded-full text-xs font-semibold ${percent >= 90 ? "bg-red-500 text-white" : percent >= 75 ? "bg-amber-500 text-white" : percent >= 50 ? "bg-yellow-500 text-white" : "bg-emerald-500 text-white"}`;
+      const warning = $("storageWarning");
+      warning.classList.toggle("hidden", percent < 75);
+      if (percent >= 75) {
+        warning.className = `rounded-xl border px-4 py-3 text-sm ${percent >= 90 ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300" : "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300"}`;
+        warning.textContent = `当前存储使用率已达到 ${percent.toFixed(1)}%，建议优先清理调用记录或历史项目。`;
+      }
+      const grid = $("storageCategoryGrid");
+      grid.innerHTML = "";
+      categories.forEach(item => {
+        const card = document.createElement("section");
+        card.className = "bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-5";
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-br ${item.color} text-white flex items-center justify-center shadow-lg"><i class="fa-solid ${item.icon}"></i></div>
+            <button class="px-3 py-1.5 rounded-lg text-xs font-medium border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-clear="${item.id}">清空</button>
+          </div>
+          <div class="mt-4 text-lg font-semibold">${item.name}</div>
+          <div class="mt-1 text-sm text-gray-500 dark:text-gray-400 min-h-[40px]">${item.description}</div>
+          <div class="mt-4 flex items-center justify-between text-sm">
+            <span class="text-gray-500 dark:text-gray-400">${item.count} 项</span>
+            <span class="font-semibold">${formatBytes(item.size)}</span>
+          </div>`;
+        card.querySelector("[data-clear]").onclick = () => {
+          if (window.confirm(`确定清空${item.name}吗？此操作不可恢复。`)) clearStorageCategory(item.id);
+        };
+        grid.appendChild(card);
+      });
+    }
+
+    function activatePanel(panelId) {
+      app.activePanel = panelId;
+      document.querySelectorAll('.settings-nav-item').forEach(item => item.classList.toggle('active', item.dataset.panel === panelId));
+      document.querySelectorAll('.settings-panel').forEach(panel => panel.classList.toggle('active', panel.id === `panel-${panelId}`));
+      saveStore();
+    }
+
+    function renderDevAreaPanel() {
+      const panel = $("promptManagementArea");
+      const box = $("devPromptListPanel");
+      if (!panel || !box) return;
+      panel.classList.toggle("hidden", !app.settings.devUnlocked);
+      if (!app.settings.devUnlocked) return;
+      const p = project();
+      box.innerHTML = "";
+      STEPS.forEach(s => {
+        const card = document.createElement("div");
+        card.className = "border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800";
+        const id = `panel_dev_${s.id}`;
+        card.innerHTML = `<div class="text-xs font-semibold mb-2">${s.title}</div><textarea id="${id}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm font-mono min-h-[120px]">${p.prompts[s.id] || defaultPrompt(s.id)}</textarea>`;
+        box.appendChild(card);
+        card.querySelector("textarea").addEventListener("input", (e) => { p.prompts[s.id] = e.target.value; if (p.activeStep === s.id && $("focusPrompt")) $("focusPrompt").value = e.target.value; saveStore(); });
+      });
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('.settings-nav-item').forEach(item => {
+        item.onclick = () => activatePanel(item.dataset.panel);
+      });
+
+      bindClick("runStepBtn", () => runStep(project().activeStep));
+      bindClick("saveProject", () => { syncFromForm(); forceSave(); toast("项目已保存"); });
+      bindClick("openDashboard", () => { renderDashboard(); $("dashboardModal").classList.remove("hidden"); });
+      bindClick("closeDashboard", () => $("dashboardModal").classList.add("hidden"));
+      bindClick("closeHistoryDetail", () => closeHistoryDetail());
+      bindClick("historyDetailBackdrop", () => closeHistoryDetail());
+      bindClick("toggleTheme", () => { app.settings.theme = app.settings.theme === "dark" ? "light" : "dark"; syncToForm(); saveStore(); });
+      $("projectSelect").onchange = () => { syncFromForm(); app.activeProjectId = $("projectSelect").value; app.recentProjectIds = [app.activeProjectId, ...app.recentProjectIds.filter(id => id !== app.activeProjectId)].slice(0, 8); syncToForm(); saveStore(); };
+      bindClick("newProject", () => { const name = window.prompt("请输入项目名称", `新项目-${app.projects.length+1}`) || "新项目"; const p = blankProject(name.trim()); app.projects.unshift(p); app.activeProjectId = p.id; app.recentProjectIds = [p.id, ...app.recentProjectIds.filter(id => id !== p.id)].slice(0, 8); renderProjectSelect(); syncToForm(); saveStore(); toast("项目已创建"); });
+      bindClick("deleteProject", () => { if (app.projects.length === 1) return toast("至少保留一个项目"); const cur = project(); app.projects = app.projects.filter(x => x.id !== cur.id); app.recentProjectIds = app.recentProjectIds.filter(id => id !== cur.id); app.activeProjectId = app.projects[0].id; renderProjectSelect(); syncToForm(); saveStore(); toast("项目已删除"); });
+      bindClick("renameProject", () => renameCurrentProject());
+      bindClick("duplicateProject", () => duplicateCurrentProject());
+      bindClick("exportJson", () => exportCurrentProjectJson());
+      bindClick("exportMd", () => exportCurrentProjectMarkdown());
+      $("activeStep").onchange = () => { syncFromForm(); project().activeStep = $("activeStep").value; syncToForm(); saveStore(); };
+      bindClick("refreshPrompt", () => { const p = project(); p.prompts[p.activeStep] = defaultPrompt(p.activeStep); syncToForm(); saveStore(); toast("已恢复默认提示词"); });
+      bindClick("copyOutputBtn", () => {
+        const value = $("focusOutput").value || "";
+        navigator.clipboard.writeText(value).then(() => toast("当前输出已复制"));
+      });
+      bindClick("clearOutputBtn", () => {
+        const p = project();
+        p.outputs[p.activeStep] = "";
+        syncToForm();
+        saveStore();
+        toast("当前输出已清空");
+      });
+      bindClick("applyToNextBtn", () => {
+        const p = project();
+        const index = STEPS.findIndex(step => step.id === p.activeStep);
+        const next = STEPS[index + 1];
+        if (!next) return toast("当前已经是最后一步");
+        p.activeStep = next.id;
+        syncToForm();
+        saveStore();
+        toast(`已切换到下一步：${next.title}`);
+      });
+      bindClick("useStep05", () => { project().finalDraft = project().outputs.step05 || ""; syncToForm(); saveStore(); });
+      bindClick("applyOpen", () => {
+        const p = project();
+        const m = (p.outputs.step06 || "").match(/推荐版本[：:]\s*([^\n]+)/);
+        if (!m) return toast("第6步缺少推荐版本");
+        const versionName = escapeRegex(m[1].trim());
+        const b = (p.outputs.step06 || "").match(new RegExp(`${versionName}[（(].*?[）)]?[：:]([\\s\\S]*?)(?=版本[A-C]|推荐版本|推荐原因|$)`));
+        const o = b?.[1]?.trim();
+        if (!o) return toast("未提取到推荐开头");
+        const ps = (p.finalDraft || "").split(/\n+/).filter(Boolean);
+        if (!ps.length) return toast("发布稿为空");
+        p.finalDraft = `${o}\n\n${ps.slice(1).join("\n\n")}`.trim();
+        syncToForm();
+        saveStore();
+      });
+      bindClick("applyEnd", () => {
+        const p = project();
+        const m = (p.outputs.step07 || "").match(/推荐版本[：:]\s*([^\n]+)/);
+        if (!m) return toast("第7步缺少推荐版本");
+        const versionName = escapeRegex(m[1].trim());
+        const b = (p.outputs.step07 || "").match(new RegExp(`${versionName}[（(].*?[）)]?[：:]([\\s\\S]*?)(?=版本[A-C]|推荐版本|推荐原因|$)`));
+        const e = b?.[1]?.trim();
+        if (!e) return toast("未提取到推荐结尾");
+        const ps = (p.finalDraft || "").split(/\n+/).filter(Boolean);
+        if (!ps.length) return toast("发布稿为空");
+        p.finalDraft = `${ps.slice(0, Math.max(ps.length - 1, 1)).join("\n\n")}\n\n${e}`.trim();
+        syncToForm();
+        saveStore();
+      });
+      bindClick("applyQa", () => { project().finalDraft = project().qaDraft || project().finalDraft; syncToForm(); saveStore(); });
+      bindClick("quickUnlockDev", () => unlockDeveloperMode());
+      bindClick("clearStorage", () => { if (confirm("确定要清空当前工作台的本地存储数据吗？此操作不可恢复！")) { localStorage.removeItem(STORE_KEY); location.reload(); } });
+      bindClick("saveActiveModelConfig", () => { syncFromForm(); saveStore(); renderModelConfigPanel(); toast("模型配置已保存"); });
+      bindClick("newModelConfig", () => {
+        const name = (window.prompt("请输入新配置名称", `新配置-${app.modelConfigs.length + 1}`) || "").trim();
+        if (!name) return;
+        const cfg = createModelConfig({ ...app.settings, name, isDefault: false });
+        app.modelConfigs.unshift(cfg);
+        app.activeModelConfigId = cfg.id;
+        applyModelConfigToSettings(cfg);
+        syncToForm();
+        saveStore();
+        toast("已创建新的模型配置");
+      });
+      bindClick("saveAsModelConfig", () => {
+        syncFromForm();
+        const current = modelConfig();
+        const name = (window.prompt("请输入另存为配置名称", `${current?.name || "配置"}-副本`) || "").trim();
+        if (!name) return;
+        const cfg = createModelConfig({ ...app.settings, name, isDefault: false });
+        app.modelConfigs.unshift(cfg);
+        app.activeModelConfigId = cfg.id;
+        syncToForm();
+        saveStore();
+        toast("模型配置已另存为新配置");
+      });
+      bindClick("duplicateModelConfigBtn", () => {
+        const current = modelConfig();
+        if (!current) return;
+        const cfg = createModelConfig({ ...current, name: `${current.name}-副本`, isDefault: false });
+        app.modelConfigs.unshift(cfg);
+        app.activeModelConfigId = cfg.id;
+        syncToForm();
+        saveStore();
+        toast("模型配置已复制");
+      });
+      bindClick("setDefaultModelConfigBtn", () => {
+        const current = modelConfig();
+        if (!current) return;
+        setDefaultModelConfig(current.id);
+        renderModelConfigPanel();
+        toast("默认模型配置已更新");
+      });
+      bindClick("deleteModelConfigBtn", () => {
+        const current = modelConfig();
+        if (!current || app.modelConfigs.length === 1) return toast("至少保留一个模型配置");
+        if (!window.confirm(`确定删除配置“${current.name}”吗？`)) return;
+        const next = app.modelConfigs.find(cfg => cfg.id !== current.id);
+        const deletingDefault = current.isDefault;
+        app.modelConfigs = app.modelConfigs.filter(cfg => cfg.id !== current.id);
+        app.activeModelConfigId = next.id;
+        if (deletingDefault) setDefaultModelConfig(next.id);
+        applyModelConfigToSettings(next);
+        syncToForm();
+        saveStore();
+        toast("模型配置已删除");
+      });
+      bindClick("testModelConnection", async () => {
+        syncFromForm();
+        const status = $("modelTestStatus");
+        status.className = "rounded-lg border px-3 py-2 text-sm bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300";
+        status.textContent = "正在测试连接，请稍候...";
+        status.classList.remove("hidden");
+        const startedAt = Date.now();
+        const current = modelConfig();
+        const prompt = '请只返回这五个字：连接测试成功';
+        try {
+          const output = (await callModel(prompt)).trim();
+          const duration = Date.now() - startedAt;
+          addCallHistory({ modelConfigId: current?.id, modelName: current?.name || app.settings.model, stepId: "connection-test", stepTitle: "连接测试", status: output.includes("连接测试成功") ? "success" : "failure", processingTime: duration, inputContent: prompt, outputContent: output, errorMessage: output.includes("连接测试成功") ? "" : "响应内容不符合预期" });
+          status.className = output.includes("连接测试成功") ? "rounded-lg border px-3 py-2 text-sm bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300" : "rounded-lg border px-3 py-2 text-sm bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300";
+          status.textContent = output.includes("连接测试成功") ? `连接成功，耗时 ${duration}ms` : `连接返回异常内容，耗时 ${duration}ms`;
+        } catch (error) {
+          const duration = Date.now() - startedAt;
+          addCallHistory({ modelConfigId: current?.id, modelName: current?.name || app.settings.model, stepId: "connection-test", stepTitle: "连接测试", status: "failure", processingTime: duration, inputContent: prompt, outputContent: "", errorMessage: error.message || "连接失败" });
+          status.className = "rounded-lg border px-3 py-2 text-sm bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300";
+          status.textContent = error.message || "连接失败";
+        }
+      });
+      const debouncedProjectSearch = debounce(() => { app.projectSearch = $("projectSearch").value; renderProjectSelect(); });
+      const debouncedModelConfigSearch = debounce(() => renderModelConfigPanel());
+      const debouncedPromptSearch = debounce(() => renderPromptManagementPanel());
+      const debouncedHistorySearch = debounce(() => renderHistoryPanel());
+      $("projectSearch").oninput = debouncedProjectSearch;
+      $("modelConfigSearch").oninput = debouncedModelConfigSearch;
+      $("promptSearchInput").oninput = debouncedPromptSearch;
+      bindClick("savePromptTemplate", () => {
+        const p = project();
+        p.prompts[p.activeStep] = $("promptEditor").value;
+        if (p.prompts[p.activeStep] === defaultPrompt(p.activeStep)) p.prompts[p.activeStep] = "";
+        saveStore();
+        syncToForm();
+        toast("提示词模板已保存");
+      });
+      bindClick("resetPromptTemplate", () => {
+        const p = project();
+        p.prompts[p.activeStep] = "";
+        saveStore();
+        syncToForm();
+        toast("已恢复当前步骤默认提示词");
+      });
+      bindClick("resetAllPrompts", () => {
+        if (!window.confirm("确定恢复全部步骤的默认提示词吗？")) return;
+        const p = project();
+        STEPS.forEach(step => { p.prompts[step.id] = ""; });
+        saveStore();
+        syncToForm();
+        toast("所有步骤提示词已恢复默认");
+      });
+      bindClick("openPromptInWorkspace", () => activatePanel("workspace"));
+      bindClick("exportHistory", () => {
+        downloadText(`call-history-${Date.now()}.json`, JSON.stringify(app.callHistory, null, 2), "application/json;charset=utf-8");
+        toast("调用记录已导出");
+      });
+      bindClick("clearHistory", () => {
+        if (!window.confirm("确定清空所有调用记录吗？")) return;
+        app.callHistory = [];
+        saveStore();
+        renderHistoryPanel();
+        updateStorageStats();
+        toast("调用记录已清空");
+      });
+      $("historyModelFilter").oninput = debouncedHistorySearch;
+      $("historyStatusFilter").onchange = () => renderHistoryPanel();
+      $("historySearchInput").oninput = debouncedHistorySearch;
+      bindClick("refreshStorageStats", () => updateStorageStats());
+      bindClick("exportAllData", () => {
+        syncFromForm();
+        downloadText(`workspace-backup-${Date.now()}.json`, JSON.stringify(app, null, 2), "application/json;charset=utf-8");
+        toast("当前工作台数据已导出");
+      });
+      const transientInputs = new Set(["projectSearch", "modelConfigSearch", "promptSearchInput", "historyModelFilter", "historyStatusFilter", "historySearchInput"]);
+      const debouncedEditors = new WeakMap();
+      const runFormEdit = (el) => {
+        if (transientInputs.has(el.id)) return;
+        syncFromForm();
+        if (el.id === "provider") {
+          applyProviderPreset();
+          persistSettingsToModelConfig();
+          syncToForm();
+        }
+        markDirty();
+        autoSave();
+        renderSteps();
+      };
+      const getDebouncedEditor = (el) => {
+        if (!debouncedEditors.has(el)) debouncedEditors.set(el, debounce(() => runFormEdit(el)));
+        return debouncedEditors.get(el);
+      };
+      document.querySelectorAll("input,select,textarea").forEach(el => {
+        const handleEdit = () => runFormEdit(el);
+        const handleInput = () => {
+          if (transientInputs.has(el.id)) return;
+          const isTextLike = el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && !["checkbox", "radio", "range", "file", "color", "date", "datetime-local", "month", "time", "week"].includes(el.type));
+          if (isTextLike) return getDebouncedEditor(el)();
+          handleEdit();
+        };
+        el.addEventListener("input", handleInput);
+        el.addEventListener("change", handleEdit);
+      });
+    }
+
+    function init() {
+      loadStore();
+      if (!Array.isArray(app.recentProjectIds)) app.recentProjectIds = [];
+      if (!app.recentProjectIds.includes(app.activeProjectId)) app.recentProjectIds.unshift(app.activeProjectId);
+      renderProjectSelect();
+      STEPS.forEach(s => { const op = document.createElement("option"); op.value = s.id; op.textContent = s.title; $("activeStep").appendChild(op); });
+      app.projects.forEach(p => { STEPS.forEach(s => { if (!p.outputs?.[s.id]) p.outputs[s.id] = ""; if (!p.prompts?.[s.id]) p.prompts[s.id] = ""; }); });
+      syncToForm();
+      activatePanel(app.activePanel || "workspace");
+      setSaveState("已保存", "saved");
+      updateStorageStats();
+      bindEvents();
+    }
+    init();
+  </script>
+</body>
+</html>
